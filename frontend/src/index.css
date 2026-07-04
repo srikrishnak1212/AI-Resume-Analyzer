@@ -1,0 +1,198 @@
+/*
+ * Global CSS — AI Resume Analyser
+ *
+ * Structure:
+ * 1. Tailwind directives
+ * 2. CSS custom properties (design tokens — light & dark mode)
+ * 3. Base element overrides
+ * 4. Utility classes that cannot be expressed in Tailwind
+ *
+ * Reference: UI-Guide.md §2 (Color System), §3 (Typography), §5 (Foundations)
+ * Rule: No component-level styles here. All component styles use Tailwind classes.
+ */
+
+/* ── 1. Tailwind Directives ──────────────────────────────────────────────────── */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── 2. CSS Custom Properties — Design Tokens ────────────────────────────────── */
+/* Reference: UI-Guide.md §2.1 Light Mode */
+:root,
+.light {
+  /* Primary */
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-light: #eef2ff;
+
+  /* Secondary */
+  --color-secondary: #0ea5e9;
+  --color-secondary-light: #e0f2fe;
+
+  /* Semantic */
+  --color-success: #16a34a;
+  --color-success-light: #dcfce7;
+  --color-warning: #d97706;
+  --color-warning-light: #fef3c7;
+  --color-danger: #dc2626;
+  --color-danger-light: #fee2e2;
+  --color-info: #2563eb;
+
+  /* Surfaces */
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f1f5f9;
+
+  /* Borders */
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+
+  /* Text */
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+
+  /* Icons */
+  --color-icon-default: #64748b;
+  --color-icon-active: #4f46e5;
+
+  /* Shadows (light mode) */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 2px 6px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 6px 16px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 12px 28px rgba(15, 23, 42, 0.12);
+  --shadow-focus: 0 0 0 3px rgba(79, 70, 229, 0.25);
+}
+
+/* Reference: UI-Guide.md §2.2 Dark Mode */
+.dark {
+  /* Primary */
+  --color-primary: #6366f1;
+  --color-primary-hover: #818cf8;
+  --color-primary-light: #1e1b4b;
+
+  /* Secondary */
+  --color-secondary: #38bdf8;
+  --color-secondary-light: #0c4a6e;
+
+  /* Semantic */
+  --color-success: #22c55e;
+  --color-success-light: #14532d;
+  --color-warning: #f59e0b;
+  --color-warning-light: #78350f;
+  --color-danger: #ef4444;
+  --color-danger-light: #7f1d1d;
+  --color-info: #3b82f6;
+
+  /* Surfaces */
+  --color-background: #0b0f19;
+  --color-surface: #111827;
+  --color-surface-alt: #1a2233;
+
+  /* Borders */
+  --color-border: #1f2937;
+  --color-border-strong: #334155;
+
+  /* Text */
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+
+  /* Icons */
+  --color-icon-default: #94a3b8;
+  --color-icon-active: #818cf8;
+
+  /* Shadows (dark mode — use borders instead of pure shadows) */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.4);
+  --shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
+
+/* ── 3. Base Element Overrides ────────────────────────────────────────────────── */
+@layer base {
+  /* Smooth color transitions when toggling dark mode */
+  *,
+  *::before,
+  *::after {
+    @apply transition-colors duration-150;
+    box-sizing: border-box;
+  }
+
+  /* Prevent layout shift from scrollbar appearing/disappearing */
+  html {
+    scrollbar-gutter: stable;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-body text-text-primary antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Focus ring — accessibility */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+
+  /* Scrollbar styling (webkit) */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border-strong rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-text-muted;
+  }
+}
+
+/* ── 4. Utility Classes ───────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Skeleton shimmer loading animation */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--color-surface-alt) 25%,
+      var(--color-border) 50%,
+      var(--color-surface-alt) 75%
+    );
+    background-size: 200% 100%;
+    @apply animate-shimmer rounded-md;
+  }
+
+  /* Score color utilities — Reference: UI-Guide.md §2.3 score rule */
+  .score-danger {
+    @apply text-danger;
+  }
+  .score-warning {
+    @apply text-warning;
+  }
+  .score-success {
+    @apply text-success;
+  }
+
+  /* Truncate text with ellipsis — single line */
+  .truncate-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+  }
+
+  /* Truncate text with ellipsis — two lines */
+  .truncate-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}
