@@ -16,6 +16,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
 
 const { connectDB } = require('./config/db');
 const logger = require('./utils/logger');
@@ -88,6 +89,10 @@ if (!config.isTest) {
 // ─── Body Parsing ─────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' })); // JSON payloads (JD text can be large)
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ─── Cookie Parser ─────────────────────────────────────────────────────────────
+// Required for reading the HTTP-only refresh token cookie
+app.use(cookieParser());
 
 // ─── Global Rate Limiting ─────────────────────────────────────────────────────
 // Reference: API.md §18 — per-IP rate limiting on all routes

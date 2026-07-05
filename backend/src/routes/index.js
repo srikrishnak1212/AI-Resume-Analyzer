@@ -16,9 +16,9 @@ const router = express.Router();
 // ─── Public routes ─────────────────────────────────────────────────────────────
 router.use('/health', healthRouter);
 
-// ─── Phase 2: Authentication (uncomment when implemented) ─────────────────────
-// const authRouter = require('./auth');
-// router.use('/auth', authRouter);
+// ─── Phase 2: Authentication ──────────────────────────────────────────────────
+const authRouter = require('./auth');
+router.use('/auth', authRouter);
 
 // ─── Phase 3: Resumes ─────────────────────────────────────────────────────────
 // const resumesRouter = require('./resumes');

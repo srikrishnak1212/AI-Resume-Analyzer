@@ -86,6 +86,16 @@ const errorHandler = (err, req, res, next) => {
     return sendError(res, { statusCode: 400, code: 'UNEXPECTED_FILE', message: 'Unexpected file field in request.' });
   }
 
+  // ── AppError — operational errors thrown by services ─────────────────────────
+  if (err.isOperational && err.statusCode) {
+    return sendError(res, {
+      statusCode: err.statusCode,
+      code: err.code || 'APP_ERROR',
+      message: err.message,
+      details: err.details || undefined,
+    });
+  }
+
   // ── Mapped custom errors ──────────────────────────────────────────────────────
   const mapped = ERROR_MAP[err.name];
   if (mapped) {

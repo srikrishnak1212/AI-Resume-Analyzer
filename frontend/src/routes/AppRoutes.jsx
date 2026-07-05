@@ -2,13 +2,13 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 import PrivateRoute from './PrivateRoute';
+import { ROUTES } from '../utils/constants';
 
 /**
  * AppRoutes — Route configuration for the entire application.
  * Uses React.lazy for code splitting — each route is a separate JS chunk.
  *
- * Reference: Architecture.md §3.1, SRS §9 (user journey), UI-Guide.md §7 (pages),
- *            Implementation-Guide.md §4
+ * Reference: Architecture.md §3.1, SRS §9 (user journey), UI-Guide.md §7 (pages)
  * Rule: Functional component only (PROJECT_RULES.md)
  */
 
@@ -17,23 +17,14 @@ import PrivateRoute from './PrivateRoute';
 const LandingPage = lazy(() => import('../pages/Landing/LandingPage'));
 const NotFoundPage = lazy(() => import('../pages/NotFound/NotFoundPage'));
 
-// Phase 2: Auth pages (uncomment when implemented)
-// const LoginPage = lazy(() => import('../pages/Auth/LoginPage'));
-// const RegisterPage = lazy(() => import('../pages/Auth/RegisterPage'));
-// const ForgotPasswordPage = lazy(() => import('../pages/Auth/ForgotPasswordPage'));
-// const ResetPasswordPage = lazy(() => import('../pages/Auth/ResetPasswordPage'));
+// Phase 2: Auth pages
+const LoginPage = lazy(() => import('../pages/Auth/LoginPage'));
+const RegisterPage = lazy(() => import('../pages/Auth/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('../pages/Auth/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('../pages/Auth/ResetPasswordPage'));
 
-// Phase 3+: Protected pages (uncomment as phases complete)
-// const DashboardPage = lazy(() => import('../pages/Dashboard/DashboardPage'));
-// const ResumeHistoryPage = lazy(() => import('../pages/History/ResumeHistoryPage'));
-// const AnalysisResultsPage = lazy(() => import('../pages/ResumeAnalysis/AnalysisResultsPage'));
-// const JobMatchPage = lazy(() => import('../pages/JobMatch/JobMatchPage'));
-// const CoverLetterPage = lazy(() => import('../pages/CoverLetter/CoverLetterPage'));
-// const InterviewPrepPage = lazy(() => import('../pages/InterviewPrep/InterviewPrepPage'));
-// const CareerRoadmapPage = lazy(() => import('../pages/CareerRoadmap/CareerRoadmapPage'));
-// const ReportsPage = lazy(() => import('../pages/Reports/ReportsPage'));
-// const ProfilePage = lazy(() => import('../pages/Profile/ProfilePage'));
-// const SettingsPage = lazy(() => import('../pages/Settings/SettingsPage'));
+// Phase 3+: Protected pages
+const DashboardPage = lazy(() => import('../pages/Dashboard/DashboardPage'));
 
 // ── Loading fallback ─────────────────────────────────────────────────────────────
 const PageLoader = () => (
@@ -50,25 +41,23 @@ const AppRoutes = () => (
   <Suspense fallback={<PageLoader />}>
     <Routes>
       {/* Public routes */}
-      <Route path="/" element={<LandingPage />} />
+      <Route path={ROUTES.LANDING} element={<LandingPage />} />
 
       {/* Phase 2: Auth routes */}
-      {/* <Route path="/login" element={<LoginPage />} /> */}
-      {/* <Route path="/register" element={<RegisterPage />} /> */}
-      {/* <Route path="/forgot-password" element={<ForgotPasswordPage />} /> */}
-      {/* <Route path="/reset-password/:token" element={<ResetPasswordPage />} /> */}
+      <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+      <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+      <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+      <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
 
-      {/* Phase 3+: Protected routes */}
-      {/* <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} /> */}
-      {/* <Route path="/history" element={<PrivateRoute><ResumeHistoryPage /></PrivateRoute>} /> */}
-      {/* <Route path="/analysis/:resumeId" element={<PrivateRoute><AnalysisResultsPage /></PrivateRoute>} /> */}
-      {/* <Route path="/job-match" element={<PrivateRoute><JobMatchPage /></PrivateRoute>} /> */}
-      {/* <Route path="/cover-letter" element={<PrivateRoute><CoverLetterPage /></PrivateRoute>} /> */}
-      {/* <Route path="/interview-prep" element={<PrivateRoute><InterviewPrepPage /></PrivateRoute>} /> */}
-      {/* <Route path="/career-roadmap" element={<PrivateRoute><CareerRoadmapPage /></PrivateRoute>} /> */}
-      {/* <Route path="/reports" element={<PrivateRoute><ReportsPage /></PrivateRoute>} /> */}
-      {/* <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} /> */}
-      {/* <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} /> */}
+      {/* Protected routes */}
+      <Route
+        path={ROUTES.DASHBOARD}
+        element={
+          <PrivateRoute>
+            <DashboardPage />
+          </PrivateRoute>
+        }
+      />
 
       {/* Fallback */}
       <Route path="*" element={<NotFoundPage />} />

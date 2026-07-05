@@ -1,39 +1,81 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import authService from '../services/authService';
 
 /**
- * AuthContext — Authentication state management (Phase 1 Stub)
- * Full implementation in Phase 2 (JWT login/register/refresh).
- * This stub provides the correct shape so routes and guards work without errors.
+ * AuthContext — Full JWT authentication state management.
+ * Access token stored in memory (window.__authToken) for XSS protection.
+ * Refresh token stored in HTTP-only cookie (managed by the server).
  *
- * Reference: Architecture.md §7, SRS FR-01, FR-02, Implementation-Guide.md Phase 2
- * Rule: Functional component + hooks only (PROJECT_RULES.md)
+ * Reference: Architecture.md §7, SRS FR-01, FR-02
  */
 
 const AuthContext = createContext(null);
 
-/**
- * AuthProvider — wraps the app and provides auth state.
- *
- * @param {{ children: React.ReactNode }} props
- */
 const AuthProvider = ({ children }) => {
-  // Phase 2: replace with real JWT-based state
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // True during initial session restore
 
-  // Phase 2: implement real login
-  const login = useCallback(async (_credentials) => {
-    throw new Error('Authentication not yet implemented. Phase 2.');
+  // ── Session restore on app mount ─────────────────────────────────────────────
+  useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        // Attempt to get a new access token using the refresh cookie
+        const res = await authService.refreshToken();
+        const newAccessToken = res?.data?.accessToken;
+        if (newAccessToken) {
+          window.__authToken = newAccessToken;
+          // Fetch user profile with the new token
+          const meRes = await authService.getMe();
+          setUser(meRes?.data?.user || null);
+        }
+      } catch {
+        // No valid refresh cookie — user is logged out
+        window.__authToken = null;
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    restoreSession();
+
+    // Listen for forced logout events from the API interceptor
+    const handleForcedLogout = () => {
+      window.__authToken = null;
+      setUser(null);
+    };
+    window.addEventListener('auth:logout', handleForcedLogout);
+    return () => window.removeEventListener('auth:logout', handleForcedLogout);
   }, []);
 
-  // Phase 2: implement real register
-  const register = useCallback(async (_userData) => {
-    throw new Error('Authentication not yet implemented. Phase 2.');
+  // ── Login ─────────────────────────────────────────────────────────────────────
+  const login = useCallback(async (credentials) => {
+    const res = await authService.login(credentials);
+    const { user: userData, accessToken } = res.data;
+    window.__authToken = accessToken;
+    setUser(userData);
+    return userData;
   }, []);
 
-  // Phase 2: implement real logout (clear tokens + redirect)
-  const logout = useCallback(() => {
-    setUser(null);
+  // ── Register ──────────────────────────────────────────────────────────────────
+  const register = useCallback(async (userData) => {
+    const res = await authService.register(userData);
+    const { user: newUser, accessToken } = res.data;
+    window.__authToken = accessToken;
+    setUser(newUser);
+    return newUser;
+  }, []);
+
+  // ── Logout ────────────────────────────────────────────────────────────────────
+  const logout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // Ignore errors — clear local state regardless
+    } finally {
+      window.__authToken = null;
+      setUser(null);
+    }
   }, []);
 
   const value = {
@@ -48,17 +90,9 @@ const AuthProvider = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-/**
- * useAuthContext — access the AuthContext.
- * Throws if used outside AuthProvider.
- *
- * @returns {object} auth context value
- */
 const useAuthContext = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuthContext must be used within an AuthProvider.');
-  }
+  if (!ctx) throw new Error('useAuthContext must be used within an AuthProvider.');
   return ctx;
 };
 
