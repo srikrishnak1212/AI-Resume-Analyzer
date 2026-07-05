@@ -98,6 +98,12 @@ app.use(cookieParser());
 // Reference: API.md §18 — per-IP rate limiting on all routes
 app.use(`/api/${config.apiVersion}`, generalLimiter);
 
+// ─── Static File Serving — Uploaded Resumes (local storage, dev/MVP only) ─────
+// In production, files will be served from R2/S3 (Phase 8+).
+// Reference: storageService.js, Architecture.md §7 (file storage)
+const path = require('path');
+app.use('/uploads', express.static(path.resolve(__dirname, '../uploads')));
+
 // ─── API Routes ────────────────────────────────────────────────────────────────
 // All routes are prefixed with /api/v1
 // Reference: API.md §1.3 (versioning)

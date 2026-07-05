@@ -85,6 +85,12 @@ const errorHandler = (err, req, res, next) => {
   if (err.code === 'LIMIT_UNEXPECTED_FILE') {
     return sendError(res, { statusCode: 400, code: 'UNEXPECTED_FILE', message: 'Unexpected file field in request.' });
   }
+  if (err.code === 'INVALID_FILE_TYPE') {
+    return sendError(res, { statusCode: 415, code: 'UNSUPPORTED_MEDIA_TYPE', message: 'Only PDF and DOCX files are accepted.' });
+  }
+  if (err.message && err.message.includes('Boundary not found')) {
+    return sendError(res, { statusCode: 400, code: 'MALFORMED_REQUEST', message: 'Multipart boundary not found.' });
+  }
 
   // ── AppError — operational errors thrown by services ─────────────────────────
   if (err.isOperational && err.statusCode) {

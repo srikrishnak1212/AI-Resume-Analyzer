@@ -21,8 +21,8 @@ const authRouter = require('./auth');
 router.use('/auth', authRouter);
 
 // ─── Phase 3: Resumes ─────────────────────────────────────────────────────────
-// const resumesRouter = require('./resumes');
-// router.use('/resumes', resumesRouter);
+const resumesRouter = require('./resumes');
+router.use('/resumes', resumesRouter);
 
 // ─── Phase 4: AI Analysis ─────────────────────────────────────────────────────
 // const analysisRouter = require('./analysis');

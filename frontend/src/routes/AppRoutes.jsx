@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 
 import PrivateRoute from './PrivateRoute';
 import { ROUTES } from '../utils/constants';
@@ -25,6 +25,7 @@ const ResetPasswordPage = lazy(() => import('../pages/Auth/ResetPasswordPage'));
 
 // Phase 3+: Protected pages
 const DashboardPage = lazy(() => import('../pages/Dashboard/DashboardPage'));
+const ResumeHistoryPage = lazy(() => import('../pages/History/ResumeHistoryPage'));
 
 // ── Loading fallback ─────────────────────────────────────────────────────────────
 const PageLoader = () => (
@@ -55,6 +56,14 @@ const AppRoutes = () => (
         element={
           <PrivateRoute>
             <DashboardPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path={ROUTES.HISTORY}
+        element={
+          <PrivateRoute>
+            <ResumeHistoryPage />
           </PrivateRoute>
         }
       />

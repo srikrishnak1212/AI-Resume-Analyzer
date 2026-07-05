@@ -1,154 +1,220 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BrainCircuit, LogOut, Sun, Moon, Sparkles, User as UserIcon, Calendar, ShieldCheck, CreditCard } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
-import { useTheme } from '../../hooks/useTheme';
+import AppLayout from '../../components/common/AppLayout';
+import UploadZone from '../../components/upload/UploadZone';
+import UploadProgress from '../../components/upload/UploadProgress';
 import Button from '../../components/common/Button';
-import { formatDate } from '../../utils/formatDate';
+import Input from '../../components/common/Input';
+import { useAuth } from '../../hooks/useAuth';
+import { uploadResume } from '../../services/resumeService';
+import { FileText, Sparkles, Plus } from 'lucide-react';
+import { ROUTES } from '../../utils/constants';
 
 /**
- * DashboardPage (Phase 2 Stub)
- * Shows current user profile details, theme switcher, and sign-out controls.
- * Validates PrivateRoute integration.
+ * DashboardPage — Authenticated entry point.
+ * Incorporates a premium Drag-and-drop resume upload zone, file validation,
+ * upload progress, and optional version labeling.
  *
- * Reference: UI-Guide.md §7.5, Implementation-Guide.md Phase 2
- * Rule: Functional Component + Hooks, Tailwind only (PROJECT_RULES.md)
+ * Reference: UI-Guide.md §7.5, §7.6 (Upload), §8.1 (Loading Behavior)
+ * Rule: Functional Component + Hooks only (PROJECT_RULES.md)
  */
 const DashboardPage = () => {
-  const { user, logout } = useAuth();
-  const { isDark, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/');
+  // State management
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [versionLabel, setVersionLabel] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState('idle'); // 'idle' | 'uploading' | 'parsing' | 'success' | 'error'
+  const [errorMsg, setErrorMsg] = useState('');
+  const [showLabelInput, setShowLabelInput] = useState(false);
+
+  // File selection callback
+  const handleFileSelect = (file) => {
+    setSelectedFile(file);
+    setShowLabelInput(true);
+    setUploadStatus('idle');
+    setUploadProgress(0);
+    setErrorMsg('');
+  };
+
+  // Upload trigger
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+
+    setUploadStatus('uploading');
+    setUploadProgress(0);
+    setErrorMsg('');
+
+    try {
+      await uploadResume(selectedFile, versionLabel, ({ loaded, total }) => {
+        const percentage = Math.round((loaded * 100) / total);
+        setUploadProgress(percentage);
+        if (percentage >= 100) {
+          setUploadStatus('parsing');
+        }
+      });
+
+      setUploadStatus('success');
+
+      // Refresh user count or redirect to history after short delay
+      setTimeout(() => {
+        navigate(ROUTES.HISTORY);
+      }, 1500);
+    } catch (err) {
+      setUploadStatus('error');
+      const msg = err.response?.data?.error?.message || 'Error uploading file.';
+      setErrorMsg(msg);
+    }
+  };
+
+  const handleReset = () => {
+    setSelectedFile(null);
+    setVersionLabel('');
+    setUploadStatus('idle');
+    setUploadProgress(0);
+    setShowLabelInput(false);
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* ── Navbar ─────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 border-b border-border bg-surface/80 backdrop-blur-sm">
-        <nav className="mx-auto flex max-w-content items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <BrainCircuit className="h-6 w-6 text-primary" strokeWidth={1.75} />
-            <span className="text-h3 font-semibold text-text-primary">ResumeAI</span>
+    <AppLayout>
+      <div className="space-y-8">
+        {/* Welcome Section */}
+        <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-h1 font-bold text-text-primary flex items-center gap-2">
+              Welcome back, {user?.fullName || 'User'}!
+              <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+            </h1>
+            <p className="text-body-sm text-text-secondary">
+              Upload a new resume version to get started.
+            </p>
           </div>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={toggleTheme}
-              aria-label="Toggle theme"
-              className="rounded-md p-2 text-icon-default hover:bg-surface-alt hover:text-text-primary"
-            >
-              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-            </button>
-            <div className="flex items-center gap-2 border-l border-border pl-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-white font-semibold text-body-sm">
-                {user?.fullName?.charAt(0) || 'U'}
-              </div>
-              <span className="hidden sm:inline text-body font-medium text-text-primary">
-                {user?.fullName}
-              </span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={LogOut}
-              onClick={handleLogout}
-              className="text-danger hover:bg-danger-light hover:text-danger"
-            >
-              Sign out
-            </Button>
-          </div>
-        </nav>
-      </header>
-
-      {/* ── Main content ───────────────────────────────────────────────────── */}
-      <main className="mx-auto max-w-content px-6 py-10">
-        <div className="mb-8">
-          <h1 className="text-h1 font-bold text-text-primary flex items-center gap-2">
-            Welcome back, {user?.fullName || 'User'}!
-            <Sparkles className="h-6 w-6 text-primary animate-pulse-gentle" />
-          </h1>
-          <p className="text-body text-text-secondary mt-1">
-            Authentication successfully verified. Private route guard active.
-          </p>
-        </div>
-
-        {/* ── Profile Detail Cards ───────────────────────────────────────────── */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Card 1: Account Details */}
-          <div className="rounded-lg border border-border bg-surface p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="rounded-full bg-primary-light p-2 text-primary">
-                <UserIcon className="h-5 w-5" />
-              </div>
-              <h3 className="text-h3 font-semibold text-text-primary">Account Details</h3>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <p className="text-caption text-text-muted select-none">Full Name</p>
-                <p className="text-body font-medium text-text-primary">{user?.fullName}</p>
-              </div>
-              <div>
-                <p className="text-caption text-text-muted select-none">Email Address</p>
-                <p className="text-body font-medium text-text-primary">{user?.email}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: Security & Status */}
-          <div className="rounded-lg border border-border bg-surface p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="rounded-full bg-success-light p-2 text-success">
-                <ShieldCheck className="h-5 w-5" />
-              </div>
-              <h3 className="text-h3 font-semibold text-text-primary">Status</h3>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <p className="text-caption text-text-muted select-none">Email Verification</p>
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption font-semibold ${
-                  user?.isEmailVerified ? 'bg-success-light text-success' : 'bg-warning-light text-warning'
-                }`}>
-                  {user?.isEmailVerified ? 'Verified' : 'Pending Verification'}
-                </span>
-              </div>
-              <div>
-                <p className="text-caption text-text-muted select-none">Joined On</p>
-                <p className="text-body font-medium text-text-primary flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4 text-icon-default" />
-                  {user?.createdAt ? formatDate(user.createdAt) : 'N/A'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Plan details */}
-          <div className="rounded-lg border border-border bg-surface p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="rounded-full bg-secondary-light p-2 text-secondary">
-                <CreditCard className="h-5 w-5" />
-              </div>
-              <h3 className="text-h3 font-semibold text-text-primary">Plan & Usage</h3>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <p className="text-caption text-text-muted select-none">Current Tier</p>
-                <span className="inline-flex items-center rounded-full bg-primary-light px-2.5 py-0.5 text-caption font-semibold uppercase tracking-wider text-primary">
-                  {user?.planTier || 'free'}
-                </span>
-              </div>
-              <div>
-                <p className="text-caption text-text-muted select-none">Resumes Analyzed</p>
-                <p className="text-body font-medium text-text-primary">
-                  {user?.resumeCount || 0} / 3 (Free Limit)
-                </p>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 mt-4 md:mt-0 select-none">
+            <span className="inline-flex items-center rounded-full bg-primary-light px-3 py-1 text-caption font-semibold uppercase tracking-wider text-primary dark:bg-primary-light/10">
+              {user?.planTier || 'free'} tier
+            </span>
           </div>
         </div>
-      </main>
-    </div>
+
+        {/* Stats row */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
+            <h3 className="text-caption font-bold tracking-wider text-text-muted uppercase">
+              Resumes Uploaded
+            </h3>
+            <p className="mt-2 text-3xl font-extrabold text-text-primary">
+              {user?.resumeCount || 0}
+            </p>
+          </div>
+          <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
+            <h3 className="text-caption font-bold tracking-wider text-text-muted uppercase">
+              Current Limitations
+            </h3>
+            <p className="mt-2 text-body font-semibold text-text-secondary">
+              PDF or DOCX, Max 5MB per upload.
+            </p>
+          </div>
+        </div>
+
+        {/* Upload Card */}
+        <div className="rounded-lg border border-border bg-surface p-6 shadow-sm max-w-2xl mx-auto">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="rounded-full bg-primary-light p-2.5 text-primary">
+              <FileText className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-h3 font-bold text-text-primary">Upload Resume</h3>
+              <p className="text-body-sm text-text-secondary">
+                Drag-and-drop or select a file to parse and save it.
+              </p>
+            </div>
+          </div>
+
+          {uploadStatus === 'idle' && !selectedFile && (
+            <UploadZone onFileSelect={handleFileSelect} />
+          )}
+
+          {/* Show file details and version labelling field */}
+          {selectedFile && uploadStatus === 'idle' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between rounded-lg border border-border bg-surface-alt p-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded bg-primary-light p-2 text-primary">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-body-sm font-semibold text-text-primary truncate max-w-[200px] sm:max-w-md">
+                      {selectedFile.name}
+                    </p>
+                    <p className="text-caption text-text-secondary">
+                      {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleReset}
+                  className="text-text-muted hover:text-text-primary"
+                >
+                  Change
+                </Button>
+              </div>
+
+              {showLabelInput && (
+                <div className="space-y-2">
+                  <label htmlFor="versionLabel" className="text-label text-text-secondary">
+                    Version Label (Optional)
+                  </label>
+                  <Input
+                    id="versionLabel"
+                    placeholder="e.g. Added software engineer internship"
+                    value={versionLabel}
+                    onChange={(e) => setVersionLabel(e.target.value)}
+                    maxLength={50}
+                  />
+                  <p className="text-caption text-text-muted">
+                    Helps you identify this resume version later (max 50 chars).
+                  </p>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="secondary" onClick={handleReset}>
+                  Cancel
+                </Button>
+                <Button variant="primary" onClick={handleUpload} icon={Plus}>
+                  Upload & Parse
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Show upload progress bar */}
+          {uploadStatus !== 'idle' && (
+            <div className="space-y-4">
+              <UploadProgress
+                fileName={selectedFile?.name || ''}
+                fileSize={selectedFile?.size || 0}
+                progress={uploadProgress}
+                status={uploadStatus}
+                errorMsg={errorMsg}
+                onCancel={handleReset}
+              />
+              {uploadStatus === 'error' && (
+                <div className="flex justify-end pt-2">
+                  <Button variant="secondary" onClick={handleReset}>
+                    Try Again
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </AppLayout>
   );
 };
 
