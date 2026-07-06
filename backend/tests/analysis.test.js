@@ -44,7 +44,7 @@ beforeAll(async () => {
 
   // Mock GeminiClient to introduce a delay for background processing tests
   GeminiClient.analyzeResume = async function (resumeText, parsedSections, options = {}) {
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    await new Promise((resolve) => setTimeout(resolve, 100));
     return GeminiClient._generateMockAnalysis(resumeText, options.targetRole);
   };
   
@@ -178,17 +178,18 @@ describe('AI Resume Analysis APIs', () => {
 
   describe('GET /api/v1/analysis/:resumeId - Fetch Analysis Details', () => {
     it('should retrieve completed analysis details after background execution finishes', async () => {
-      // Wait for background promise to finish mock execution
-      await new Promise((resolve) => setTimeout(resolve, 150));
-
-      const res = await request(app)
-        .get(`/api/v1/analysis/${resumeIdA}`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .send();
-
-      if (res.status !== 200 || res.body.data.analysis.status !== 'completed') {
-        const dbJob = await Analysis.findById(analysisIdA).lean();
-        console.log('DIAGNOSTIC - Analysis job in DB:', JSON.stringify(dbJob, null, 2));
+      // Poll until completed (max 2 seconds under Jest scheduling overhead)
+      let res;
+      for (let i = 0; i < 40; i++) {
+        res = await request(app)
+          .get(`/api/v1/analysis/${resumeIdA}`)
+          .set('Authorization', `Bearer ${tokenA}`)
+          .send();
+        
+        if (res.status === 200 && res.body.data.analysis.status === 'completed') {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
       }
 
       expect(res.status).toBe(200);

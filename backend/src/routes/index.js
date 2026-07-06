@@ -34,6 +34,10 @@ router.use('/analysis', analysisRouter);
 // router.use('/reports', reportsRouter);
 // router.use('/analytics', analyticsRouter);
 
+// ─── Phase 6A: Dashboard Foundation ──────────────────────────────────────────
+const dashboardRouter = require('./dashboard');
+router.use('/dashboard', dashboardRouter);
+
 // ─── Phase 6: Job Description Matching ───────────────────────────────────────
 // const jobDescriptionsRouter = require('./jobDescriptions');
 // router.use('/job-descriptions', jobDescriptionsRouter);

@@ -1,6 +1,7 @@
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { BrainCircuit, FileText, Target, Mail, MessageSquareText, Compass, BarChart2, Upload, Sparkles } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../hooks/useAuth';
 import { ROUTES } from '../../utils/constants';
 
 /**
@@ -81,7 +82,12 @@ const HOW_IT_WORKS = [
 ];
 
 const LandingPage = () => {
+  const { user } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+
+  if (user) {
+    return <Navigate to={ROUTES.DASHBOARD} replace />;
+  }
 
   return (
     <div className="min-h-screen bg-background">
