@@ -1,0 +1,7 @@
+Extract details from the following job description:
+
+<<<JD_TEXT_START>>>
+{{jobDescriptionText}}
+<<<JD_TEXT_END>>>
+
+Return the JSON object now:

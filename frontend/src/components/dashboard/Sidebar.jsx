@@ -32,14 +32,14 @@ const Sidebar = ({ isOpen, onClose }) => {
       icon: FileText,
       path: ROUTES.REPORTS,
     },
-  ];
-
-  const comingSoonItems = [
     {
       label: 'Job Match',
       icon: Target,
-      path: '/job-match-locked',
+      path: ROUTES.JOB_MATCH,
     },
+  ];
+
+  const comingSoonItems = [
     {
       label: 'Cover Letter',
       icon: FileSignature,

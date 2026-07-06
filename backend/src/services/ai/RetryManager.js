@@ -129,6 +129,110 @@ class RetryManager {
     return true;
   }
 
+  async executeJobMatchWithRetry(opts) {
+    const { provider, resumeText, jobDescriptionText, promptOptions } = opts;
+    const maxAttempts = 3;
+    let attempt = 0;
+    let correctiveRetryTriggered = false;
+
+    let currentSystemPrompt = promptOptions.systemPrompt;
+    let currentUserPrompt = promptOptions.userPrompt;
+
+    while (attempt < maxAttempts) {
+      attempt++;
+      logger.info(`[RetryManager] Running Job Match AI attempt ${attempt}/${maxAttempts}...`);
+
+      try {
+        const rawResponse = await provider.matchJobDescription(resumeText, jobDescriptionText, {
+          ...promptOptions,
+          systemPrompt: currentSystemPrompt,
+          userPrompt: currentUserPrompt,
+        });
+
+        const validatedData = responseValidator.validateJobMatch(rawResponse);
+        logger.info(`[RetryManager] Job Match AI succeeded on attempt ${attempt}.`);
+        return validatedData;
+      } catch (err) {
+        logger.error(`[RetryManager] Attempt ${attempt} failed: ${err.message}`);
+        const isValidationError =
+          err.code === 'AI_JSON_PARSE_FAILED' || err.code === 'AI_SCHEMA_VALIDATION_FAILED';
+
+        if (attempt >= maxAttempts) {
+          logger.error('[RetryManager] Max attempts reached for Job Match.');
+          throw err;
+        }
+
+        if (isValidationError) {
+          if (correctiveRetryTriggered) throw err;
+          correctiveRetryTriggered = true;
+          logger.warn(`[RetryManager] Validation failed. Triggering corrective retry.`);
+          const errorSnippet = err.details ? JSON.stringify(err.details) : err.message;
+          currentUserPrompt = `${promptOptions.userPrompt}\n\n[SYSTEM WARNING: Your previous response was invalid. Error: ${errorSnippet}. Correct the errors and return ONLY a valid JSON object matching the required schema. Do not include explanation text.]`;
+          continue;
+        }
+
+        const isTransient = this._isTransientError(err);
+        if (!isTransient) throw err;
+
+        const backoffMs = attempt * 1500;
+        logger.info(`[RetryManager] Transient error. Waiting ${backoffMs}ms before retrying...`);
+        await this._sleep(backoffMs);
+      }
+    }
+  }
+
+  async executeJobDescriptionExtractionWithRetry(opts) {
+    const { provider, jobDescriptionText, promptOptions } = opts;
+    const maxAttempts = 3;
+    let attempt = 0;
+    let correctiveRetryTriggered = false;
+
+    let currentSystemPrompt = promptOptions.systemPrompt;
+    let currentUserPrompt = promptOptions.userPrompt;
+
+    while (attempt < maxAttempts) {
+      attempt++;
+      logger.info(`[RetryManager] Running Job Description Details Extraction attempt ${attempt}/${maxAttempts}...`);
+
+      try {
+        const rawResponse = await provider.extractJobDescriptionDetails(jobDescriptionText, {
+          ...promptOptions,
+          systemPrompt: currentSystemPrompt,
+          userPrompt: currentUserPrompt,
+        });
+
+        const validatedData = responseValidator.validateJobDescriptionDetails(rawResponse);
+        logger.info(`[RetryManager] Job Description Details Extraction succeeded on attempt ${attempt}.`);
+        return validatedData;
+      } catch (err) {
+        logger.error(`[RetryManager] Attempt ${attempt} failed: ${err.message}`);
+        const isValidationError =
+          err.code === 'AI_JSON_PARSE_FAILED' || err.code === 'AI_SCHEMA_VALIDATION_FAILED';
+
+        if (attempt >= maxAttempts) {
+          logger.error('[RetryManager] Max attempts reached for Job Description details extraction.');
+          throw err;
+        }
+
+        if (isValidationError) {
+          if (correctiveRetryTriggered) throw err;
+          correctiveRetryTriggered = true;
+          logger.warn(`[RetryManager] Validation failed. Triggering corrective retry.`);
+          const errorSnippet = err.details ? JSON.stringify(err.details) : err.message;
+          currentUserPrompt = `${promptOptions.userPrompt}\n\n[SYSTEM WARNING: Your previous response was invalid. Error: ${errorSnippet}. Correct the errors and return ONLY a valid JSON object matching the required schema. Do not include explanation text.]`;
+          continue;
+        }
+
+        const isTransient = this._isTransientError(err);
+        if (!isTransient) throw err;
+
+        const backoffMs = attempt * 1500;
+        logger.info(`[RetryManager] Transient error. Waiting ${backoffMs}ms before retrying...`);
+        await this._sleep(backoffMs);
+      }
+    }
+  }
+
   /**
    * Promise-based delay helper
    *

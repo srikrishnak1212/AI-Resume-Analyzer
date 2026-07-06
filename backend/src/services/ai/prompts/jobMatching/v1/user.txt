@@ -1,0 +1,13 @@
+Evaluate the matching between this candidate's resume and the job description details.
+
+Resume parsed text:
+<<<RESUME_TEXT_START>>>
+{{resumeText}}
+<<<RESUME_TEXT_END>>>
+
+Job description details:
+<<<JD_DETAILS_START>>>
+{{jobDescriptionDetails}}
+<<<JD_DETAILS_END>>>
+
+Return the JSON object now:

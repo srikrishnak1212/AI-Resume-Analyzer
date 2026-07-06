@@ -39,8 +39,10 @@ const dashboardRouter = require('./dashboard');
 router.use('/dashboard', dashboardRouter);
 
 // ─── Phase 6: Job Description Matching ───────────────────────────────────────
-// const jobDescriptionsRouter = require('./jobDescriptions');
-// router.use('/job-descriptions', jobDescriptionsRouter);
+const jobMatchRouter = require('./jobMatch');
+const jobDescriptionRouter = require('./jobDescription');
+router.use('/job-match', jobMatchRouter);
+router.use('/job-description', jobDescriptionRouter);
 
 // ─── Phase 7: Enhancement Features ────────────────────────────────────────────
 // const coverLettersRouter = require('./coverLetters');

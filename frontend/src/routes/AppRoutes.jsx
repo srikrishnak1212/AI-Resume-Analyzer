@@ -31,6 +31,7 @@ const ResumeAnalysisPage = lazy(() => import('../pages/ResumeAnalysis/ResumeAnal
 const AnalyticsPage = lazy(() => import('../pages/Analytics/AnalyticsPage'));
 const ReportsPage = lazy(() => import('../pages/Reports/ReportsPage'));
 const ReportViewerPage = lazy(() => import('../pages/Reports/ReportViewerPage'));
+const JobMatchingPage = lazy(() => import('../pages/JobMatching/JobMatchingPage'));
 
 // ── Loading fallback ─────────────────────────────────────────────────────────────
 const PageLoader = () => (
@@ -109,6 +110,14 @@ const AppRoutes = () => (
         element={
           <PrivateRoute>
             <ReportViewerPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path={ROUTES.JOB_MATCH}
+        element={
+          <PrivateRoute>
+            <JobMatchingPage />
           </PrivateRoute>
         }
       />

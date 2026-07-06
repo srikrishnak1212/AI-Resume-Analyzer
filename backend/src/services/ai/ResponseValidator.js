@@ -21,6 +21,38 @@ const grammarIssueSchema = z.object({
   issue: z.string().trim(),
 });
 
+const jobDescriptionDetailsSchema = z.object({
+  jobTitle: z.string().trim().default('Untitled Role'),
+  companyName: z.string().trim().default('Unknown Company'),
+  requiredSkills: z.array(z.string().trim()).default([]),
+  preferredSkills: z.array(z.string().trim()).default([]),
+  experience: z.string().trim().default(''),
+  education: z.string().trim().default(''),
+  responsibilities: z.array(z.string().trim()).default([]),
+  keywords: z.array(z.string().trim()).default([]),
+});
+
+const jobMatchResponseSchema = z.object({
+  overallMatchScore: z.number().int().min(0).max(100),
+  technicalSkillsScore: z.number().int().min(0).max(100),
+  softSkillsScore: z.number().int().min(0).max(100),
+  experienceScore: z.number().int().min(0).max(100),
+  educationScore: z.number().int().min(0).max(100),
+  projectsScore: z.number().int().min(0).max(100),
+  keywordScore: z.number().int().min(0).max(100),
+  matchedSkills: z.array(z.string().trim()).default([]),
+  missingSkills: z.array(z.string().trim()).default([]),
+  matchedKeywords: z.array(z.string().trim()).default([]),
+  missingKeywords: z.array(z.string().trim()).default([]),
+  strengths: z.array(z.string().trim()).default([]),
+  weaknesses: z.array(z.string().trim()).default([]),
+  recommendations: z.array(z.string().trim()).default([]),
+  resumeImprovements: z.array(z.string().trim()).default([]),
+  priorityActions: z.array(z.string().trim()).default([]),
+  summary: z.string().trim().default(''),
+  confidenceScore: z.number().min(0).max(100).default(0),
+});
+
 const sectionFeedbackSchema = z.object({
   feedback: z.string().trim().min(5, 'Section feedback must be at least 5 characters long'),
   score: z.number().int().min(0).max(100),
@@ -171,6 +203,70 @@ class ResponseValidator {
         422,
         'AI_SEMANTIC_KEYWORDS_EMPTY'
       );
+    }
+  }
+
+  validateJobMatch(rawText) {
+    if (!rawText || typeof rawText !== 'string') {
+      throw new AppError('Received empty response from AI model.', 502, 'AI_EMPTY_RESPONSE');
+    }
+
+    let cleanText = rawText.trim();
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim();
+    }
+
+    let parsedJson;
+    try {
+      parsedJson = JSON.parse(cleanText);
+    } catch (err) {
+      logger.error('[ResponseValidator] Syntactic JSON parsing for job match failed.');
+      throw new AppError('AI job match response is not valid JSON.', 422, 'AI_JSON_PARSE_FAILED', [
+        { message: err.message, rawResponseSnippet: rawText.substring(0, 200) }
+      ]);
+    }
+
+    try {
+      return jobMatchResponseSchema.parse(parsedJson);
+    } catch (err) {
+      logger.error('[ResponseValidator] Zod schema validation for job match failed.');
+      const details = err.errors.map((e) => ({
+        field: e.path.join('.'),
+        message: e.message,
+      }));
+      throw new AppError('AI job match response does not match schema.', 422, 'AI_SCHEMA_VALIDATION_FAILED', details);
+    }
+  }
+
+  validateJobDescriptionDetails(rawText) {
+    if (!rawText || typeof rawText !== 'string') {
+      throw new AppError('Received empty response from AI model.', 502, 'AI_EMPTY_RESPONSE');
+    }
+
+    let cleanText = rawText.trim();
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim();
+    }
+
+    let parsedJson;
+    try {
+      parsedJson = JSON.parse(cleanText);
+    } catch (err) {
+      logger.error('[ResponseValidator] Syntactic JSON parsing for JD extraction failed.');
+      throw new AppError('AI JD extraction response is not valid JSON.', 422, 'AI_JSON_PARSE_FAILED', [
+        { message: err.message, rawResponseSnippet: rawText.substring(0, 200) }
+      ]);
+    }
+
+    try {
+      return jobDescriptionDetailsSchema.parse(parsedJson);
+    } catch (err) {
+      logger.error('[ResponseValidator] Zod schema validation for JD extraction failed.');
+      const details = err.errors.map((e) => ({
+        field: e.path.join('.'),
+        message: e.message,
+      }));
+      throw new AppError('AI JD extraction response does not match schema.', 422, 'AI_SCHEMA_VALIDATION_FAILED', details);
     }
   }
 }

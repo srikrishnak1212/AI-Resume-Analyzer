@@ -31,17 +31,16 @@ const Sidebar = ({ isOpen, onClose }) => {
       icon: FileText,
       path: ROUTES.REPORTS,
     },
+    {
+      label: 'Job Match',
+      icon: Target,
+      path: ROUTES.JOB_MATCH,
+    },
   ];
 
   // These features are not yet implemented (Phase 4+), but shown for visual completeness in the UI.
   // We can render them with a "Coming Soon" styling or lock badge.
   const futureNavItems = [
-    {
-      label: 'Job Match',
-      icon: Target,
-      path: '/job-match-locked',
-      disabled: true,
-    },
     {
       label: 'Cover Letter',
       icon: FileSignature,

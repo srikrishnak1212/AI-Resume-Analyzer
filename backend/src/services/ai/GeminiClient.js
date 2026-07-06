@@ -184,6 +184,139 @@ class GeminiClient extends AiProvider {
 
     return JSON.stringify(mock);
   }
+
+  async matchJobDescription(resumeText, jobDescriptionText, options = {}) {
+    const { systemPrompt, userPrompt, useFallbackModel = false } = options;
+
+    const isTest = process.env.NODE_ENV === 'test' || config.env === 'test';
+    const isMock = isTest || !this.genAI || options.mock;
+
+    if (isMock) {
+      logger.info('[GeminiClient] Serving mock job match results.');
+      return this._generateMockJobMatch(options.resumeId, options.jobDescriptionId);
+    }
+
+    try {
+      const activeModel = useFallbackModel ? this.fallbackModelName : this.modelName;
+      logger.info(`[GeminiClient] Calling Gemini API for matching using model: ${activeModel}...`);
+
+      const model = this.genAI.getGenerativeModel({
+        model: activeModel,
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.2,
+        },
+        systemInstruction: systemPrompt,
+      });
+
+      const startTime = Date.now();
+      const result = await model.generateContent(userPrompt);
+      const response = await result.response;
+      const text = response.text();
+      const duration = Date.now() - startTime;
+
+      logger.info(`[GeminiClient] Gemini API job match responded in ${duration}ms.`);
+      return text;
+    } catch (err) {
+      logger.error(`[GeminiClient] Gemini API job match failed: ${err.message}`);
+      throw err;
+    }
+  }
+
+  async extractJobDescriptionDetails(jobDescriptionText, options = {}) {
+    const { systemPrompt, userPrompt, useFallbackModel = false } = options;
+
+    const isTest = process.env.NODE_ENV === 'test' || config.env === 'test';
+    const isMock = isTest || !this.genAI || options.mock;
+
+    if (isMock) {
+      logger.info('[GeminiClient] Serving mock job description details.');
+      return this._generateMockJobDescriptionDetails();
+    }
+
+    try {
+      const activeModel = useFallbackModel ? this.fallbackModelName : this.modelName;
+      logger.info(`[GeminiClient] Calling Gemini API for extraction using model: ${activeModel}...`);
+
+      const model = this.genAI.getGenerativeModel({
+        model: activeModel,
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.1,
+        },
+        systemInstruction: systemPrompt,
+      });
+
+      const startTime = Date.now();
+      const result = await model.generateContent(userPrompt);
+      const response = await result.response;
+      const text = response.text();
+      const duration = Date.now() - startTime;
+
+      logger.info(`[GeminiClient] Gemini API extraction responded in ${duration}ms.`);
+      return text;
+    } catch (err) {
+      logger.error(`[GeminiClient] Gemini API extraction failed: ${err.message}`);
+      throw err;
+    }
+  }
+
+  _generateMockJobMatch(resumeId, jobDescriptionId) {
+    const mock = {
+      overallMatchScore: 78,
+      technicalSkillsScore: 82,
+      softSkillsScore: 75,
+      experienceScore: 70,
+      educationScore: 90,
+      projectsScore: 80,
+      keywordScore: 75,
+      matchedSkills: ['JavaScript', 'React', 'Node.js', 'MongoDB', 'Git'],
+      missingSkills: ['TypeScript', 'Docker', 'CI/CD'],
+      matchedKeywords: ['React', 'Node.js', 'MongoDB', 'JavaScript'],
+      missingKeywords: ['REST APIs', 'TypeScript', 'Docker', 'Agile'],
+      strengths: [
+        'Candidate has strong foundational experience in core tech stack (React, Node.js)',
+        'Excellent academic credentials match the requirement'
+      ],
+      weaknesses: [
+        'No direct experience with containerization (Docker) listed in the resume',
+        'Lack of professional work experience'
+      ],
+      recommendations: [
+        'Learn TypeScript and build a small project with it',
+        'Deploy a project using Docker to demonstrate containerization skills'
+      ],
+      resumeImprovements: [
+        'Add a separate section or bullet point highlighting REST API integration experience',
+        'Update project descriptions to include database design details'
+      ],
+      priorityActions: [
+        'Add REST API skills explicitly',
+        'Add containerization keyword'
+      ],
+      summary: 'Overall, the candidate is a strong fit for the technical stack but lacks required tools like Docker and TypeScript.',
+      confidenceScore: 85
+    };
+    return JSON.stringify(mock);
+  }
+
+  _generateMockJobDescriptionDetails() {
+    const mock = {
+      jobTitle: 'Software Engineer',
+      companyName: 'Flipkart',
+      requiredSkills: ['JavaScript', 'React', 'Node.js', 'MongoDB', 'SQL'],
+      preferredSkills: ['TypeScript', 'Docker', 'AWS', 'Jest'],
+      experience: '0-2 years in Software Development',
+      education: 'Bachelor\'s in Computer Science or related field',
+      responsibilities: [
+        'Design and develop high-performance web applications using React and Node.js',
+        'Collaborate with product managers and other engineers to deliver new features',
+        'Optimize applications for maximum speed and scalability'
+      ],
+      keywords: ['REST APIs', 'Agile', 'Unit Testing', 'GitHub', 'CI/CD']
+    };
+    return JSON.stringify(mock);
+  }
 }
 
 module.exports = new GeminiClient();
