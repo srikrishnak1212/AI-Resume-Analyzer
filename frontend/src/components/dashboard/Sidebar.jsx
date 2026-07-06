@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, History, Sparkles, Target, FileSignature, HelpCircle, X } from 'lucide-react';
+import { LayoutDashboard, History, Sparkles, Target, FileSignature, HelpCircle, X, FileText } from 'lucide-react';
 import Button from '../common/Button';
 import { ROUTES } from '../../utils/constants';
 
@@ -26,6 +26,11 @@ const Sidebar = ({ isOpen, onClose }) => {
       label: 'AI Analytics',
       icon: Sparkles,
       path: ROUTES.ANALYTICS,
+    },
+    {
+      label: 'Reports & Export',
+      icon: FileText,
+      path: ROUTES.REPORTS,
     },
   ];
 

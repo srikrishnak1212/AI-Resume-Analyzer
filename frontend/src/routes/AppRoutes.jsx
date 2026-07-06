@@ -29,6 +29,8 @@ const ResumeHistoryPage = lazy(() => import('../pages/History/ResumeHistoryPage'
 const ParsedPreviewPage = lazy(() => import('../pages/History/ParsedPreviewPage'));
 const ResumeAnalysisPage = lazy(() => import('../pages/ResumeAnalysis/ResumeAnalysisPage'));
 const AnalyticsPage = lazy(() => import('../pages/Analytics/AnalyticsPage'));
+const ReportsPage = lazy(() => import('../pages/Reports/ReportsPage'));
+const ReportViewerPage = lazy(() => import('../pages/Reports/ReportViewerPage'));
 
 // ── Loading fallback ─────────────────────────────────────────────────────────────
 const PageLoader = () => (
@@ -91,6 +93,22 @@ const AppRoutes = () => (
         element={
           <PrivateRoute>
             <AnalyticsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path={ROUTES.REPORTS}
+        element={
+          <PrivateRoute>
+            <ReportsPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path={ROUTES.REPORT_VIEWER}
+        element={
+          <PrivateRoute>
+            <ReportViewerPage />
           </PrivateRoute>
         }
       />

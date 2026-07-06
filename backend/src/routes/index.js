@@ -29,9 +29,9 @@ const analysisRouter = require('./analysis');
 router.use('/analysis', analysisRouter);
 
 // ─── Phase 5: Reports & Analytics ────────────────────────────────────────────
-// const reportsRouter = require('./reports');
+const reportsRouter = require('./reports');
 const analyticsRouter = require('./analytics');
-// router.use('/reports', reportsRouter);
+router.use('/reports', reportsRouter);
 router.use('/analytics', analyticsRouter);
 
 // ─── Phase 6A: Dashboard Foundation ──────────────────────────────────────────

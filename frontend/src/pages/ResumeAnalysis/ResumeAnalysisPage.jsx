@@ -20,6 +20,7 @@ import KeywordCard from '../../components/dashboard/KeywordCard';
 
 import { getAnalysis, triggerAnalysis } from '../../services/analysisService';
 import { getResume } from '../../services/resumeService';
+import { generateReport } from '../../services/reportService';
 import { ROUTES } from '../../utils/constants';
 
 /**
@@ -144,6 +145,18 @@ const ResumeAnalysisPage = () => {
     }
   };
 
+  const handleViewReport = async () => {
+    try {
+      setLoading(true);
+      const r = await generateReport(analysis.analysisId || analysis._id);
+      navigate(`/reports/${r.reportId}`);
+    } catch (err) {
+      toast.error('Failed to prepare report.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Score progression color mapping
   const getProgressColor = (score) => {
     if (score <= 49) return 'bg-danger';
@@ -189,6 +202,15 @@ const ResumeAnalysisPage = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {!analyzing && !error && analysis && analysis.status === 'completed' && (
+              <Button
+                variant="primary"
+                onClick={handleViewReport}
+                className="flex items-center gap-2 shrink-0 font-bold"
+              >
+                View AI Report
+              </Button>
+            )}
             <Button
               variant="secondary"
               onClick={handleReanalyze}

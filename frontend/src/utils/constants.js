@@ -45,6 +45,7 @@ export const ROUTES = {
   INTERVIEW_PREP: '/interview-prep',
   CAREER_ROADMAP: '/career-roadmap',
   REPORTS: '/reports',
+  REPORT_VIEWER: '/reports/:reportId',
   PROFILE: '/profile',
   SETTINGS: '/settings',
   PARSED_PREVIEW: '/resumes/:resumeId/preview',
