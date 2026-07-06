@@ -444,7 +444,7 @@ const generatePDFReport = async ({ reportId, user, resume, analysis }) => {
            .lineTo(550, doc.page.height - 45)
            .stroke();
 
-        const modelStr = `Model: ${analysis.aiModel || 'gemini-1.5-pro'}  |  Prompt v1.0  |  Schema v1.0`;
+        const modelStr = `Model: ${analysis.aiModel || 'gemini-2.5-flash'}  |  Prompt v1.0  |  Schema v1.0`;
         doc.fontSize(7.5)
            .fillColor('#A0AEC0')
            .font('Helvetica')

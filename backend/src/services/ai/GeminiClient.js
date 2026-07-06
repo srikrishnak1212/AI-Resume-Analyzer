@@ -26,28 +26,72 @@ class GeminiClient extends AiProvider {
     if (isValidKey) {
       this.genAI = new GoogleGenerativeAI(this.apiKey);
     } else {
-      logger.warn('[GeminiClient] API key is missing or placeholder. Running in MOCK fallback mode.');
+      logger.warn('[GeminiClient] API key is missing or placeholder. Running in mock-fallback-only mode.');
     }
   }
 
   /**
+   * Helper to map Gemini SDK errors to application errors.
+   */
+  _handleGeminiError(err) {
+    const msg = err.message ? err.message.toLowerCase() : '';
+    const status = err.status || err.statusCode || 500;
+
+    // Check for invalid API key
+    if (
+      msg.includes('api_key_invalid') ||
+      msg.includes('api key') ||
+      msg.includes('key is invalid') ||
+      (status === 400 && msg.includes('key')) ||
+      status === 401 ||
+      status === 403
+    ) {
+      return new AppError('Invalid Google Gemini API Key configured.', 401, 'AI_INVALID_API_KEY');
+    }
+    // Check for quota exceeded / rate limit
+    if (msg.includes('quota') || msg.includes('limit') || msg.includes('429') || status === 429) {
+      return new AppError('Gemini API rate limit or quota exceeded. Please try again later.', 429, 'AI_QUOTA_EXCEEDED');
+    }
+    // Check for model unavailable
+    if (msg.includes('not found') || msg.includes('not supported') || msg.includes('404') || status === 404) {
+      return new AppError('The requested Gemini model is currently unavailable or unsupported.', 503, 'AI_MODEL_UNAVAILABLE');
+    }
+    // Check for safety block
+    if (msg.includes('safety') || msg.includes('block') || msg.includes('candidate')) {
+      return new AppError('Gemini API blocked the response due to content safety filters.', 400, 'AI_SAFETY_BLOCKED');
+    }
+    // Check for timeout
+    if (msg.includes('timeout') || msg.includes('deadline') || status === 504) {
+      return new AppError('Gemini API request timed out.', 504, 'AI_TIMEOUT');
+    }
+    // Check for network failure
+    if (msg.includes('fetch') || msg.includes('network') || msg.includes('connect')) {
+      return new AppError('Failed to communicate with Google Gemini API due to a network error.', 502, 'AI_NETWORK_FAILURE');
+    }
+    // Check for empty/invalid response
+    if (msg.includes('empty') || msg.includes('no response')) {
+      return new AppError('Received empty response from Gemini API.', 502, 'AI_EMPTY_RESPONSE');
+    }
+
+    return new AppError(`Gemini API error: ${err.message}`, status, 'AI_GENERIC_ERROR');
+  }
+
+  /**
    * Invokes Gemini model with system instruction and user prompt.
-   *
-   * @param {string} resumeText - Raw resume parsed content
-   * @param {object} parsedSections - Segments structure
-   * @param {object} options - Options containing systemPrompt, userPrompt, targetRole, mock
-   * @returns {Promise<object>} Parsed JSON response
    */
   async analyzeResume(resumeText, parsedSections, options = {}) {
     const { systemPrompt, userPrompt, useFallbackModel = false } = options;
 
-    // Determine if we should mock (tests or missing API key)
     const isTest = process.env.NODE_ENV === 'test' || config.env === 'test';
-    const isMock = isTest || !this.genAI || options.mock;
+    const isMock = isTest || options.mock;
 
     if (isMock) {
       logger.info('[GeminiClient] Serving mock analysis results.');
       return this._generateMockAnalysis(resumeText, options.targetRole);
+    }
+
+    if (!this.genAI) {
+      throw new AppError('Google Gemini API Key is missing. Please configure GEMINI_API_KEY in your env file.', 500, 'AI_CONFIG_ERROR');
     }
 
     try {
@@ -73,19 +117,12 @@ class GeminiClient extends AiProvider {
       return text;
     } catch (err) {
       logger.error(`[GeminiClient] Gemini API invocation failed: ${err.message}`);
-      // Propagate error for RetryManager to intercept
-      throw err;
+      throw this._handleGeminiError(err);
     }
   }
 
   /**
    * Returns a static, highly realistic analysis structure conforming to the output schema.
-   * Helps ensure the test suite passes and application remains runnable without credentials.
-   *
-   * @param {string} resumeText
-   * @param {string} [targetRole]
-   * @returns {object} Mock JSON text matching the schema
-   * @private
    */
   _generateMockAnalysis(resumeText, targetRole = 'Software Engineer') {
     const mock = {
@@ -189,11 +226,15 @@ class GeminiClient extends AiProvider {
     const { systemPrompt, userPrompt, useFallbackModel = false } = options;
 
     const isTest = process.env.NODE_ENV === 'test' || config.env === 'test';
-    const isMock = isTest || !this.genAI || options.mock;
+    const isMock = isTest || options.mock;
 
     if (isMock) {
       logger.info('[GeminiClient] Serving mock job match results.');
       return this._generateMockJobMatch(options.resumeId, options.jobDescriptionId);
+    }
+
+    if (!this.genAI) {
+      throw new AppError('Google Gemini API Key is missing. Please configure GEMINI_API_KEY in your env file.', 500, 'AI_CONFIG_ERROR');
     }
 
     try {
@@ -219,7 +260,7 @@ class GeminiClient extends AiProvider {
       return text;
     } catch (err) {
       logger.error(`[GeminiClient] Gemini API job match failed: ${err.message}`);
-      throw err;
+      throw this._handleGeminiError(err);
     }
   }
 
@@ -227,11 +268,15 @@ class GeminiClient extends AiProvider {
     const { systemPrompt, userPrompt, useFallbackModel = false } = options;
 
     const isTest = process.env.NODE_ENV === 'test' || config.env === 'test';
-    const isMock = isTest || !this.genAI || options.mock;
+    const isMock = isTest || options.mock;
 
     if (isMock) {
       logger.info('[GeminiClient] Serving mock job description details.');
       return this._generateMockJobDescriptionDetails();
+    }
+
+    if (!this.genAI) {
+      throw new AppError('Google Gemini API Key is missing. Please configure GEMINI_API_KEY in your env file.', 500, 'AI_CONFIG_ERROR');
     }
 
     try {
@@ -257,7 +302,7 @@ class GeminiClient extends AiProvider {
       return text;
     } catch (err) {
       logger.error(`[GeminiClient] Gemini API extraction failed: ${err.message}`);
-      throw err;
+      throw this._handleGeminiError(err);
     }
   }
 
@@ -322,11 +367,15 @@ class GeminiClient extends AiProvider {
     const { systemPrompt, userPrompt, useFallbackModel = false } = options;
 
     const isTest = process.env.NODE_ENV === 'test' || config.env === 'test';
-    const isMock = isTest || !this.genAI || options.mock;
+    const isMock = isTest || options.mock;
 
     if (isMock) {
       logger.info('[GeminiClient] Serving mock resume rewrite.');
       return this._generateMockRewrite(originalContent, options.rewriteMode);
+    }
+
+    if (!this.genAI) {
+      throw new AppError('Google Gemini API Key is missing. Please configure GEMINI_API_KEY in your env file.', 500, 'AI_CONFIG_ERROR');
     }
 
     try {
@@ -351,7 +400,7 @@ class GeminiClient extends AiProvider {
       return text;
     } catch (err) {
       logger.error(`[GeminiClient] Gemini API rewrite failed: ${err.message}`);
-      throw err;
+      throw this._handleGeminiError(err);
     }
   }
 
@@ -359,11 +408,15 @@ class GeminiClient extends AiProvider {
     const { systemPrompt, userPrompt, useFallbackModel = false } = options;
 
     const isTest = process.env.NODE_ENV === 'test' || config.env === 'test';
-    const isMock = isTest || !this.genAI || options.mock;
+    const isMock = isTest || options.mock;
 
     if (isMock) {
       logger.info('[GeminiClient] Serving mock cover letter.');
       return this._generateMockCoverLetter(options.jobTitle, options.companyName, options.tone, options.hiringManager);
+    }
+
+    if (!this.genAI) {
+      throw new AppError('Google Gemini API Key is missing. Please configure GEMINI_API_KEY in your env file.', 500, 'AI_CONFIG_ERROR');
     }
 
     try {
@@ -388,7 +441,7 @@ class GeminiClient extends AiProvider {
       return text;
     } catch (err) {
       logger.error(`[GeminiClient] Gemini API cover letter failed: ${err.message}`);
-      throw err;
+      throw this._handleGeminiError(err);
     }
   }
 
@@ -399,6 +452,75 @@ class GeminiClient extends AiProvider {
   _generateMockCoverLetter(jobTitle = 'Software Engineer', company = 'Flipkart', tone = 'Professional', hiringManager = '') {
     const salutation = hiringManager ? `Dear ${hiringManager},` : 'Dear Hiring Team,';
     return `${salutation}\n\nI am writing to express my strong interest in the ${jobTitle} position at ${company}. With my background in software development and technical expertise, I am confident in my ability to contribute value to your engineering team.\n\nThank you for your time and consideration.\n\nSincerely,\nCandidate (Tone: ${tone})`;
+  }
+
+  // CENTRALIZED PLACEHOLDERS FOR FUTURE PHASES
+  async generateInterviewPrep(resumeText, jobDescriptionText, options = {}) {
+    const { systemPrompt, userPrompt, useFallbackModel = false } = options;
+
+    const isTest = process.env.NODE_ENV === 'test' || config.env === 'test';
+    if (isTest) {
+      return JSON.stringify({ questions: ['Mock interview question?'] });
+    }
+
+    if (!this.genAI) {
+      throw new AppError('Google Gemini API Key is missing. Please configure GEMINI_API_KEY in your env file.', 500, 'AI_CONFIG_ERROR');
+    }
+
+    try {
+      const activeModel = useFallbackModel ? this.fallbackModelName : this.modelName;
+      logger.info(`[GeminiClient] Calling Gemini API for interview prep using model: ${activeModel}...`);
+
+      const model = this.genAI.getGenerativeModel({
+        model: activeModel,
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.5,
+        },
+        systemInstruction: systemPrompt,
+      });
+
+      const result = await model.generateContent(userPrompt);
+      const response = await result.response;
+      return response.text();
+    } catch (err) {
+      logger.error(`[GeminiClient] Gemini API interview prep failed: ${err.message}`);
+      throw this._handleGeminiError(err);
+    }
+  }
+
+  async generateCareerRoadmap(resumeText, options = {}) {
+    const { systemPrompt, userPrompt, useFallbackModel = false } = options;
+
+    const isTest = process.env.NODE_ENV === 'test' || config.env === 'test';
+    if (isTest) {
+      return JSON.stringify({ steps: ['Mock career step'] });
+    }
+
+    if (!this.genAI) {
+      throw new AppError('Google Gemini API Key is missing. Please configure GEMINI_API_KEY in your env file.', 500, 'AI_CONFIG_ERROR');
+    }
+
+    try {
+      const activeModel = useFallbackModel ? this.fallbackModelName : this.modelName;
+      logger.info(`[GeminiClient] Calling Gemini API for career roadmap using model: ${activeModel}...`);
+
+      const model = this.genAI.getGenerativeModel({
+        model: activeModel,
+        generationConfig: {
+          responseMimeType: 'application/json',
+          temperature: 0.5,
+        },
+        systemInstruction: systemPrompt,
+      });
+
+      const result = await model.generateContent(userPrompt);
+      const response = await result.response;
+      return response.text();
+    } catch (err) {
+      logger.error(`[GeminiClient] Gemini API career roadmap failed: ${err.message}`);
+      throw this._handleGeminiError(err);
+    }
   }
 }
 

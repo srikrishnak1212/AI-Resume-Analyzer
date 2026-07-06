@@ -79,7 +79,7 @@ beforeAll(async () => {
     resumeId: resumeA._id,
     userId: new mongoose.Types.ObjectId(userIdA),
     resumeHash: 'dummyhash123',
-    aiModel: 'gemini-1.5-pro',
+    aiModel: 'gemini-2.5-flash',
     atsScore: 85,
     grammarScore: 90,
     formattingScore: 80,
