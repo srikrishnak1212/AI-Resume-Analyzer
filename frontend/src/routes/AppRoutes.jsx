@@ -26,6 +26,8 @@ const ResetPasswordPage = lazy(() => import('../pages/Auth/ResetPasswordPage'));
 // Phase 3+: Protected pages
 const DashboardPage = lazy(() => import('../pages/Dashboard/DashboardPage'));
 const ResumeHistoryPage = lazy(() => import('../pages/History/ResumeHistoryPage'));
+const ParsedPreviewPage = lazy(() => import('../pages/History/ParsedPreviewPage'));
+const ResumeAnalysisPage = lazy(() => import('../pages/ResumeAnalysis/ResumeAnalysisPage'));
 
 // ── Loading fallback ─────────────────────────────────────────────────────────────
 const PageLoader = () => (
@@ -64,6 +66,22 @@ const AppRoutes = () => (
         element={
           <PrivateRoute>
             <ResumeHistoryPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path={ROUTES.PARSED_PREVIEW}
+        element={
+          <PrivateRoute>
+            <ParsedPreviewPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path={ROUTES.ANALYSIS}
+        element={
+          <PrivateRoute>
+            <ResumeAnalysisPage />
           </PrivateRoute>
         }
       />

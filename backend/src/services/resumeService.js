@@ -12,33 +12,11 @@ const fs = require('fs');
 const Resume = require('../models/Resume');
 const User = require('../models/User');
 const storageService = require('./storageService');
-const { parsePdf } = require('./parsing/pdfParser');
-const { parseDocx } = require('./parsing/docxParser');
-const { extractSections, countWords } = require('./parsing/sectionExtractor');
+const resumeParsingService = require('./parsing/resumeParsingService');
 const AppError = require('../utils/AppError');
 const logger = require('../utils/logger');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const PDF_MIME  = 'application/pdf';
-const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-
-/**
- * Parse a resume file buffer (PDF or DOCX) and return text + pageCount.
- *
- * @param {Buffer} buffer
- * @param {string} mimeType
- * @param {string} fileName
- */
-const parseFile = async (buffer, mimeType, fileName) => {
-  if (mimeType === PDF_MIME) {
-    return parsePdf(buffer, fileName);
-  }
-  if (mimeType === DOCX_MIME) {
-    return parseDocx(buffer, fileName);
-  }
-  throw new AppError('Unsupported file type.', 415, 'UNSUPPORTED_MEDIA_TYPE');
-};
 
 /**
  * Determine the next version number for a user.
@@ -73,34 +51,10 @@ const uploadResume = async ({ userId, multerFile, versionLabel }) => {
   // ── 1. Save to storage (local in MVP) ────────────────────────────────────────
   const { storageKey, storageUrl } = await storageService.save(diskPath, userId);
 
-  // ── 2. Parse the file ─────────────────────────────────────────────────────────
-  let parsedText = null;
-  let pageCount = null;
-  let parsingStatus = 'pending';
-  let parsingError = null;
-  let sections = {};
-  let wordCount = 0;
-
-  try {
-    const buffer = fs.readFileSync(diskPath);
-    const { text, pageCount: pc } = await parseFile(buffer, mimetype, originalname);
-
-    parsedText = text;
-    pageCount = pc;
-    wordCount = countWords(text);
-    sections = extractSections(text);
-    parsingStatus = 'success';
-  } catch (err) {
-    parsingStatus = 'failed';
-    parsingError = err.message;
-    logger.error(`[resumeService] Parsing failed for "${originalname}": ${err.message}`);
-    // Do NOT throw — store the resume with parsingStatus="failed" so the user can retry
-  }
-
-  // ── 3. Determine version number ───────────────────────────────────────────────
+  // ── 2. Determine version number ───────────────────────────────────────────────
   const versionNumber = await getNextVersionNumber(userId);
 
-  // ── 4. Create Resume document ─────────────────────────────────────────────────
+  // ── 3. Create Resume document in Pending state ───────────────────────────────
   const resume = await Resume.create({
     userId,
     fileName: originalname,
@@ -110,19 +64,19 @@ const uploadResume = async ({ userId, multerFile, versionLabel }) => {
     storageKey,
     versionNumber,
     versionLabel: versionLabel || null,
-    parsedText,
-    sections,
-    wordCount,
-    pageCount,
-    parsingStatus,
-    parsingError,
+    parsingStatus: 'Pending',
     analysisStatus: 'pending',
   });
 
-  // ── 5. Increment user's resumeCount ───────────────────────────────────────────
+  // ── 4. Increment user's resumeCount ───────────────────────────────────────────
   await User.findByIdAndUpdate(userId, { $inc: { resumeCount: 1 } });
 
-  logger.info(`[resumeService] Resume uploaded: ${resume._id} (v${versionNumber}) for user ${userId}`);
+  // ── 5. Trigger parsing asynchronously in the background ─────────────────────
+  resumeParsingService.parseResume(resume._id).catch((err) => {
+    logger.error(`[resumeService] Background parsing error for Resume ${resume._id}: ${err.message}`);
+  });
+
+  logger.info(`[resumeService] Resume record created and background parsing triggered: ${resume._id} (v${versionNumber}) for user ${userId}`);
 
   return resume;
 };

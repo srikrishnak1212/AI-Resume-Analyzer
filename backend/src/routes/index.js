@@ -25,8 +25,8 @@ const resumesRouter = require('./resumes');
 router.use('/resumes', resumesRouter);
 
 // ─── Phase 4: AI Analysis ─────────────────────────────────────────────────────
-// const analysisRouter = require('./analysis');
-// router.use('/analysis', analysisRouter);
+const analysisRouter = require('./analysis');
+router.use('/analysis', analysisRouter);
 
 // ─── Phase 5: Reports & Analytics ────────────────────────────────────────────
 // const reportsRouter = require('./reports');

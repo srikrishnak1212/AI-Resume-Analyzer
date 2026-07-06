@@ -35,4 +35,10 @@ router.get('/:resumeId', validateResumeId, resumeController.getResume);
 // ── Delete resume ─────────────────────────────────────────────────────────────
 router.delete('/:resumeId', validateResumeId, resumeController.deleteResume);
 
+// ── Trigger parsing manually ──────────────────────────────────────────────────
+router.post('/:resumeId/parse', validateResumeId, resumeController.parseResume);
+
+// ── Retrieve parsed text and sections ─────────────────────────────────────────
+router.get('/:resumeId/parsed-content', validateResumeId, resumeController.getParsedContent);
+
 module.exports = router;

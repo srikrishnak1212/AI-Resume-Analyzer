@@ -6,9 +6,9 @@ import UploadProgress from '../../components/upload/UploadProgress';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { useAuth } from '../../hooks/useAuth';
-import { uploadResume } from '../../services/resumeService';
-import { FileText, Sparkles, Plus } from 'lucide-react';
-import { ROUTES } from '../../utils/constants';
+import { uploadResume, getResume, triggerParse } from '../../services/resumeService';
+import { FileText, Sparkles, Plus, RefreshCw } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 /**
  * DashboardPage — Authenticated entry point.
@@ -29,6 +29,7 @@ const DashboardPage = () => {
   const [uploadStatus, setUploadStatus] = useState('idle'); // 'idle' | 'uploading' | 'parsing' | 'success' | 'error'
   const [errorMsg, setErrorMsg] = useState('');
   const [showLabelInput, setShowLabelInput] = useState(false);
+  const [createdResumeId, setCreatedResumeId] = useState(null);
 
   // File selection callback
   const handleFileSelect = (file) => {
@@ -37,6 +38,34 @@ const DashboardPage = () => {
     setUploadStatus('idle');
     setUploadProgress(0);
     setErrorMsg('');
+    setCreatedResumeId(null);
+  };
+
+  // Poll background parsing status
+  const pollParsingStatus = async (resumeId) => {
+    try {
+      const result = await getResume(resumeId);
+      const resume = result.resume;
+
+      if (resume.parsingStatus === 'Completed') {
+        setUploadStatus('success');
+        toast.success('Resume parsed successfully!');
+        setTimeout(() => {
+          navigate(`/analysis/${resumeId}`);
+        }, 1500);
+      } else if (resume.parsingStatus === 'Failed') {
+        setUploadStatus('error');
+        setErrorMsg(resume.parsingError || 'Resume extraction failed.');
+      } else {
+        // Still Pending or Processing, poll again in 1.5 seconds
+        setTimeout(() => {
+          pollParsingStatus(resumeId);
+        }, 1500);
+      }
+    } catch (err) {
+      setUploadStatus('error');
+      setErrorMsg(err.response?.data?.error?.message || 'Error tracking parse progress.');
+    }
   };
 
   // Upload trigger
@@ -48,24 +77,37 @@ const DashboardPage = () => {
     setErrorMsg('');
 
     try {
-      await uploadResume(selectedFile, versionLabel, ({ loaded, total }) => {
+      const result = await uploadResume(selectedFile, versionLabel, ({ loaded, total }) => {
         const percentage = Math.round((loaded * 100) / total);
         setUploadProgress(percentage);
-        if (percentage >= 100) {
-          setUploadStatus('parsing');
-        }
       });
 
-      setUploadStatus('success');
+      const resumeId = result.resume?._id;
+      setCreatedResumeId(resumeId);
+      setUploadStatus('parsing');
 
-      // Refresh user count or redirect to history after short delay
-      setTimeout(() => {
-        navigate(ROUTES.HISTORY);
-      }, 1500);
+      // Trigger status polling
+      pollParsingStatus(resumeId);
     } catch (err) {
       setUploadStatus('error');
       const msg = err.response?.data?.error?.message || 'Error uploading file.';
       setErrorMsg(msg);
+    }
+  };
+
+  // Retry parsing trigger
+  const handleRetry = async () => {
+    if (!createdResumeId) return;
+
+    setUploadStatus('parsing');
+    setErrorMsg('');
+
+    try {
+      await triggerParse(createdResumeId);
+      pollParsingStatus(createdResumeId);
+    } catch (err) {
+      setUploadStatus('error');
+      setErrorMsg(err.response?.data?.error?.message || 'Failed to re-trigger parsing.');
     }
   };
 
@@ -75,6 +117,7 @@ const DashboardPage = () => {
     setUploadStatus('idle');
     setUploadProgress(0);
     setShowLabelInput(false);
+    setCreatedResumeId(null);
   };
 
   return (
@@ -204,10 +247,15 @@ const DashboardPage = () => {
                 onCancel={handleReset}
               />
               {uploadStatus === 'error' && (
-                <div className="flex justify-end pt-2">
+                <div className="flex justify-end gap-3 pt-2">
                   <Button variant="secondary" onClick={handleReset}>
-                    Try Again
+                    Try Another File
                   </Button>
+                  {createdResumeId && (
+                    <Button variant="primary" onClick={handleRetry} icon={RefreshCw}>
+                      Retry Parsing
+                    </Button>
+                  )}
                 </div>
               )}
             </div>

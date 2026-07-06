@@ -46,6 +46,7 @@ export const ROUTES = {
   REPORTS: '/reports',
   PROFILE: '/profile',
   SETTINGS: '/settings',
+  PARSED_PREVIEW: '/resumes/:resumeId/preview',
 };
 
 // ── Pagination ────────────────────────────────────────────────────────────────────
@@ -64,6 +65,14 @@ export const ANALYSIS_STATUS = {
   PROCESSING: 'processing',
   COMPLETED: 'completed',
   FAILED: 'failed',
+};
+
+// ── Parsing status ────────────────────────────────────────────────────────────────
+export const PARSING_STATUS = {
+  PENDING: 'Pending',
+  PROCESSING: 'Processing',
+  COMPLETED: 'Completed',
+  FAILED: 'Failed',
 };
 
 // ── Interview question categories ──────────────────────────────────────────────────

@@ -1,0 +1,58 @@
+Analyze the following resume and return the structured JSON analysis.
+
+Target role (if known): {{targetRole}}
+
+<<<RESUME_TEXT_START>>>
+{{resumeText}}
+<<<RESUME_TEXT_END>>>
+
+Parsed sections (for reference, already extracted):
+{{parsedSectionsJson}}
+
+Return the JSON object now, matching this exact schema structure:
+{
+  "overallScore": 74,
+  "atsScore": 71,
+  "grammarScore": 88,
+  "formattingScore": 80,
+  "skillsScore": 68,
+  "experienceScore": 65,
+  "summaryScore": 72,
+  "educationScore": 90,
+  "projectsScore": 70,
+  "scoreSummary": "string, one paragraph narrative summary of the overall resume quality",
+  "strengths": ["string"],
+  "weaknesses": ["string"],
+  "quickWins": ["string"],
+  "atsAnalysis": {
+    "passedChecks": ["string"],
+    "failedChecks": ["string"],
+    "keywordsFound": ["string"],
+    "keywordsMissing": ["string"],
+    "formatWarnings": ["string"]
+  },
+  "grammarAnalysis": {
+    "issues": [{ "section": "string", "issue": "string" }],
+    "suggestions": ["string"],
+    "toneAssessment": "string"
+  },
+  "formattingAnalysis": {
+    "issues": ["string"],
+    "suggestions": ["string"],
+    "lengthAssessment": "string"
+  },
+  "sectionReviews": {
+    "summary": { "feedback": "string", "score": 0 },
+    "experience": { "feedback": "string", "score": 0 },
+    "education": { "feedback": "string", "score": 0 },
+    "skills": { "feedback": "string", "score": 0 },
+    "projects": { "feedback": "string", "score": 0 }
+  },
+  "skillsAnalysis": {
+    "detectedSkills": ["string"],
+    "hardSkills": ["string"],
+    "softSkills": ["string"],
+    "missingSkills": ["string"],
+    "trendingSkills": ["string"]
+  }
+}

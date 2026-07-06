@@ -5,7 +5,7 @@ import ResumeCard from '../../components/common/ResumeCard';
 import Button from '../../components/common/Button';
 import Spinner from '../../components/common/Spinner';
 import Alert from '../../components/common/Alert';
-import { listResumes, deleteResume } from '../../services/resumeService';
+import { listResumes, deleteResume, triggerParse } from '../../services/resumeService';
 import { History, UploadCloud, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ROUTES } from '../../utils/constants';
 import toast from 'react-hot-toast';
@@ -26,6 +26,7 @@ const ResumeHistoryPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [retryingId, setRetryingId] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   // Fetch resumes list
@@ -47,10 +48,23 @@ const ResumeHistoryPage = () => {
     fetchResumes(currentPage);
   }, [currentPage]);
 
-  // Handle viewing detail (placeholder for Phase 4+)
+  // Handle viewing parsed preview
   const handleViewDetail = (id) => {
-    console.log('Viewing resume:', id);
-    toast.success('Resume details loaded locally (AI analysis unlocked in Phase 4!)');
+    navigate(`/resumes/${id}/preview`);
+  };
+
+  // Handle re-triggering parse for failed documents
+  const handleRetry = async (id) => {
+    setRetryingId(id);
+    try {
+      await triggerParse(id);
+      toast.success('Resume parsing re-triggered successfully.');
+      fetchResumes(currentPage);
+    } catch (err) {
+      toast.error(err.response?.data?.error?.message || 'Failed to trigger parsing.');
+    } finally {
+      setRetryingId(null);
+    }
   };
 
   // Handle soft deletion
@@ -142,7 +156,10 @@ const ResumeHistoryPage = () => {
                   resume={resume}
                   onViewDetail={handleViewDetail}
                   onDelete={handleDelete}
+                  onRetry={handleRetry}
+                  onAnalyze={(id) => navigate(`/analysis/${id}`)}
                   isDeleting={deletingId === resume._id}
+                  isRetrying={retryingId === resume._id}
                 />
               ))}
             </div>

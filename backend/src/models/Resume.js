@@ -136,10 +136,16 @@ const resumeSchema = new mongoose.Schema(
     parsingStatus: {
       type: String,
       enum: {
-        values: ['pending', 'success', 'failed'],
-        message: 'parsingStatus must be pending, success, or failed',
+        values: ['Pending', 'Processing', 'Completed', 'Failed'],
+        message: 'parsingStatus must be Pending, Processing, Completed, or Failed',
       },
-      default: 'pending',
+      default: 'Pending',
+    },
+
+    /** Timestamp when parsing finished */
+    parsedAt: {
+      type: Date,
+      default: null,
     },
 
     /** Error message if parsing failed */

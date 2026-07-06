@@ -13,6 +13,7 @@ const resumeService = require('../services/resumeService');
 const { sendSuccess, buildPagination } = require('../utils/responseFormatter');
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
+const logger = require('../utils/logger');
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -84,4 +85,57 @@ const deleteResume = asyncHandler(async (req, res) => {
   return res.status(204).end();
 });
 
-module.exports = { uploadResume, listResumes, getResume, deleteResume };
+// ── POST /api/v1/resumes/:resumeId/parse — Trigger parsing manually ──────────
+
+const parseResume = asyncHandler(async (req, res) => {
+  checkValidation(req);
+
+  const resume = await resumeService.getResumeById(req.params.resumeId, req.user._id);
+
+  if (resume.parsingStatus === 'Processing') {
+    throw new AppError('Resume is currently being parsed.', 400, 'PARSING_IN_PROGRESS');
+  }
+
+  // Trigger parsing in the background asynchronously
+  const resumeParsingService = require('../services/parsing/resumeParsingService');
+  resumeParsingService.parseResume(resume._id).catch((err) => {
+    logger.error(`[resumeController] Async parse trigger error for ${resume._id}: ${err.message}`);
+  });
+
+  return sendSuccess(res, {
+    statusCode: 200,
+    message: 'Resume parsing triggered successfully.',
+    data: { resumeId: resume._id, parsingStatus: 'Pending' },
+  });
+});
+
+// ── GET /api/v1/resumes/:resumeId/parsed-content — Retrieve parsed text/sections
+
+const getParsedContent = asyncHandler(async (req, res) => {
+  checkValidation(req);
+
+  const resume = await resumeService.getResumeById(req.params.resumeId, req.user._id);
+
+  return sendSuccess(res, {
+    data: {
+      resumeId: resume._id,
+      fileName: resume.fileName,
+      parsingStatus: resume.parsingStatus,
+      parsingError: resume.parsingError,
+      parsedAt: resume.parsedAt,
+      parsedText: resume.parsedText,
+      sections: resume.sections,
+      wordCount: resume.wordCount,
+      pageCount: resume.pageCount,
+    },
+  });
+});
+
+module.exports = {
+  uploadResume,
+  listResumes,
+  getResume,
+  deleteResume,
+  parseResume,
+  getParsedContent,
+};

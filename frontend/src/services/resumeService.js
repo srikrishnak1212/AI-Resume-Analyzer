@@ -73,3 +73,25 @@ export const getResume = async (resumeId) => {
 export const deleteResume = async (resumeId) => {
   await apiClient.delete(`/resumes/${resumeId}`);
 };
+
+/**
+ * Trigger parsing manually for a resume.
+ *
+ * @param {string} resumeId
+ * @returns {Promise<{ resumeId: string, parsingStatus: string }>}
+ */
+export const triggerParse = async (resumeId) => {
+  const res = await apiClient.post(`/resumes/${resumeId}/parse`);
+  return res.data.data;
+};
+
+/**
+ * Retrieve the full parsed content and sections structure.
+ *
+ * @param {string} resumeId
+ * @returns {Promise<object>}
+ */
+export const getParsedContent = async (resumeId) => {
+  const res = await apiClient.get(`/resumes/${resumeId}/parsed-content`);
+  return res.data.data;
+};

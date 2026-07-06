@@ -13,6 +13,31 @@ const request = require('supertest');
 const mongoose = require('mongoose');
 const { app } = require('../src/server');
 
+// ── Jest Mocks for PDF/DOCX parsing ───────────────────────────────────────────
+jest.mock('../src/services/parsing/pdfParser', () => ({
+  parsePdf: jest.fn().mockImplementation((buffer) => {
+    if (buffer.toString().includes('corrupted data')) {
+      throw new Error('PDF parsing failed: Corrupted PDF file structure.');
+    }
+    return Promise.resolve({
+      text: 'Hello, this is a mock parsed resume text containing experience and education.',
+      pageCount: 1,
+    });
+  }),
+}));
+
+jest.mock('../src/services/parsing/docxParser', () => ({
+  parseDocx: jest.fn().mockImplementation((buffer) => {
+    if (buffer.toString().includes('corrupted data')) {
+      throw new Error('DOCX parsing failed: Corrupted DOCX structure.');
+    }
+    return Promise.resolve({
+      text: 'Hello, this is a mock parsed resume text from docx containing experience and education.',
+      pageCount: 1,
+    });
+  }),
+}));
+
 // ── Test user ──────────────────────────────────────────────────────────────────
 const TEST_USER = {
   fullName: 'Resume Tester',
@@ -20,7 +45,14 @@ const TEST_USER = {
   password: 'StrongPass1',
 };
 
+const SECOND_USER = {
+  fullName: 'Second Tester',
+  email: 'second.tester@testexample.com',
+  password: 'StrongPass2',
+};
+
 let accessToken;
+let secondAccessToken;
 let agent;
 let uploadedResumeId;
 
@@ -42,13 +74,27 @@ beforeAll(async () => {
   }
   agent = request.agent(app);
 
-  // Register and log in to get an access token
+  // Register and log in primary user to get an access token
   await agent.post('/api/v1/auth/register').send(TEST_USER);
   const res = await agent.post('/api/v1/auth/login').send({
     email: TEST_USER.email,
     password: TEST_USER.password,
   });
   accessToken = res.body?.data?.accessToken;
+
+  // Register and log in secondary user to get their access token
+  await agent.post('/api/v1/auth/register').send(SECOND_USER);
+  const secondRes = await agent.post('/api/v1/auth/login').send({
+    email: SECOND_USER.email,
+    password: SECOND_USER.password,
+  });
+  secondAccessToken = secondRes.body?.data?.accessToken;
+
+  // Re-login primary user on the agent so its cookies are restored
+  await agent.post('/api/v1/auth/login').send({
+    email: TEST_USER.email,
+    password: TEST_USER.password,
+  });
 });
 
 afterAll(async () => {
@@ -177,6 +223,104 @@ describe('GET /api/v1/resumes/:resumeId', () => {
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(res.status).toBe(400);
+  });
+});
+
+// ── Resume Parsing Endpoints ──────────────────────────────────────────────────
+
+describe('Resume Parsing Endpoints', () => {
+  it('should trigger parsing and wait for async completion', async () => {
+    let status = 'Pending';
+    // Poll the resume status until it resolves
+    for (let i = 0; i < 15; i++) {
+      const res = await agent
+        .get(`/api/v1/resumes/${uploadedResumeId}`)
+        .set('Authorization', `Bearer ${accessToken}`);
+
+      status = res.body.data.resume.parsingStatus;
+      if (status === 'Completed' || status === 'Failed') {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+
+    expect(status).toBe('Completed');
+  });
+
+  it('should retrieve parsed content for the owner', async () => {
+    const res = await agent
+      .get(`/api/v1/resumes/${uploadedResumeId}/parsed-content`)
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.parsingStatus).toBe('Completed');
+    expect(res.body.data.parsedText).toBeDefined();
+    expect(res.body.data.sections).toBeDefined();
+  });
+
+  it('should reject parsed content retrieval for a non-owner — 404', async () => {
+    const res = await request(app)
+      .get(`/api/v1/resumes/${uploadedResumeId}/parsed-content`)
+      .set('Authorization', `Bearer ${secondAccessToken}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it('should trigger manual re-parse for the owner', async () => {
+    const res = await agent
+      .post(`/api/v1/resumes/${uploadedResumeId}/parse`)
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.parsingStatus).toBe('Pending');
+  });
+
+  it('should reject manual re-parse trigger for a non-owner — 404', async () => {
+    const res = await request(app)
+      .post(`/api/v1/resumes/${uploadedResumeId}/parse`)
+      .set('Authorization', `Bearer ${secondAccessToken}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it('should handle parsing failure for a corrupted/empty file', async () => {
+    const corruptedPdf = Buffer.from('corrupted data');
+    const uploadRes = await agent
+      .post('/api/v1/resumes')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .attach('resume', corruptedPdf, {
+        filename: 'corrupted.pdf',
+        contentType: 'application/pdf',
+      });
+
+    expect(uploadRes.status).toBe(201);
+    const corruptedId = uploadRes.body.data.resume._id;
+
+    // Poll until status transitions to Failed
+    let status = 'Pending';
+    for (let i = 0; i < 15; i++) {
+      const res = await agent
+        .get(`/api/v1/resumes/${corruptedId}`)
+        .set('Authorization', `Bearer ${accessToken}`);
+
+      status = res.body.data.resume.parsingStatus;
+      if (status === 'Completed' || status === 'Failed') {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
+
+    expect(status).toBe('Failed');
+
+    const detailsRes = await agent
+      .get(`/api/v1/resumes/${corruptedId}/parsed-content`)
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(detailsRes.status).toBe(200);
+    expect(detailsRes.body.data.parsingStatus).toBe('Failed');
+    expect(detailsRes.body.data.parsingError).toBeDefined();
   });
 });
 
