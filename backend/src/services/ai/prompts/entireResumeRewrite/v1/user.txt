@@ -1,0 +1,11 @@
+Please rewrite the entire resume below.
+
+Rewrite Mode: {{rewriteMode}}
+Requested Improvements: {{improvements}}
+
+Original Resume Content:
+<<<CONTENT_START>>>
+{{originalContent}}
+<<<CONTENT_END>>>
+
+Rewritten resume:

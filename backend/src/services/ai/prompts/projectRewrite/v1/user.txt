@@ -1,0 +1,11 @@
+Please rewrite the project details below.
+
+Rewrite Mode: {{rewriteMode}}
+Requested Improvements: {{improvements}}
+
+Original Project details:
+<<<CONTENT_START>>>
+{{originalContent}}
+<<<CONTENT_END>>>
+
+Rewritten projects:

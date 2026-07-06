@@ -233,6 +233,86 @@ class RetryManager {
     }
   }
 
+  async executeRewriteWithRetry(opts) {
+    const { provider, originalContent, promptOptions } = opts;
+    const maxAttempts = 3;
+    let attempt = 0;
+
+    let currentSystemPrompt = promptOptions.systemPrompt;
+    let currentUserPrompt = promptOptions.userPrompt;
+
+    while (attempt < maxAttempts) {
+      attempt++;
+      logger.info(`[RetryManager] Running Resume Rewrite AI attempt ${attempt}/${maxAttempts}...`);
+
+      try {
+        const rawResponse = await provider.rewriteResumeContent(originalContent, {
+          ...promptOptions,
+          systemPrompt: currentSystemPrompt,
+          userPrompt: currentUserPrompt,
+        });
+
+        const validatedText = responseValidator.validateRewrite(rawResponse);
+        logger.info(`[RetryManager] Resume Rewrite AI succeeded on attempt ${attempt}.`);
+        return validatedText;
+      } catch (err) {
+        logger.error(`[RetryManager] Attempt ${attempt} failed: ${err.message}`);
+
+        if (attempt >= maxAttempts) {
+          logger.error('[RetryManager] Max attempts reached for Resume Rewrite.');
+          throw err;
+        }
+
+        const isTransient = this._isTransientError(err);
+        if (!isTransient) throw err;
+
+        const backoffMs = attempt * 1500;
+        logger.info(`[RetryManager] Waiting ${backoffMs}ms before retrying...`);
+        await this._sleep(backoffMs);
+      }
+    }
+  }
+
+  async executeCoverLetterWithRetry(opts) {
+    const { provider, resumeText, jobDescriptionText, promptOptions } = opts;
+    const maxAttempts = 3;
+    let attempt = 0;
+
+    let currentSystemPrompt = promptOptions.systemPrompt;
+    let currentUserPrompt = promptOptions.userPrompt;
+
+    while (attempt < maxAttempts) {
+      attempt++;
+      logger.info(`[RetryManager] Running Cover Letter AI attempt ${attempt}/${maxAttempts}...`);
+
+      try {
+        const rawResponse = await provider.generateCoverLetter(resumeText, jobDescriptionText, {
+          ...promptOptions,
+          systemPrompt: currentSystemPrompt,
+          userPrompt: currentUserPrompt,
+        });
+
+        const validatedText = responseValidator.validateCoverLetter(rawResponse);
+        logger.info(`[RetryManager] Cover Letter AI succeeded on attempt ${attempt}.`);
+        return validatedText;
+      } catch (err) {
+        logger.error(`[RetryManager] Attempt ${attempt} failed: ${err.message}`);
+
+        if (attempt >= maxAttempts) {
+          logger.error('[RetryManager] Max attempts reached for Cover Letter.');
+          throw err;
+        }
+
+        const isTransient = this._isTransientError(err);
+        if (!isTransient) throw err;
+
+        const backoffMs = attempt * 1500;
+        logger.info(`[RetryManager] Waiting ${backoffMs}ms before retrying...`);
+        await this._sleep(backoffMs);
+      }
+    }
+  }
+
   /**
    * Promise-based delay helper
    *

@@ -317,6 +317,89 @@ class GeminiClient extends AiProvider {
     };
     return JSON.stringify(mock);
   }
+
+  async rewriteResumeContent(originalContent, options = {}) {
+    const { systemPrompt, userPrompt, useFallbackModel = false } = options;
+
+    const isTest = process.env.NODE_ENV === 'test' || config.env === 'test';
+    const isMock = isTest || !this.genAI || options.mock;
+
+    if (isMock) {
+      logger.info('[GeminiClient] Serving mock resume rewrite.');
+      return this._generateMockRewrite(originalContent, options.rewriteMode);
+    }
+
+    try {
+      const activeModel = useFallbackModel ? this.fallbackModelName : this.modelName;
+      logger.info(`[GeminiClient] Calling Gemini API for rewrite using model: ${activeModel}...`);
+
+      const model = this.genAI.getGenerativeModel({
+        model: activeModel,
+        generationConfig: {
+          temperature: 0.3,
+        },
+        systemInstruction: systemPrompt,
+      });
+
+      const startTime = Date.now();
+      const result = await model.generateContent(userPrompt);
+      const response = await result.response;
+      const text = response.text();
+      const duration = Date.now() - startTime;
+
+      logger.info(`[GeminiClient] Gemini API rewrite responded in ${duration}ms.`);
+      return text;
+    } catch (err) {
+      logger.error(`[GeminiClient] Gemini API rewrite failed: ${err.message}`);
+      throw err;
+    }
+  }
+
+  async generateCoverLetter(resumeText, jobDescriptionText, options = {}) {
+    const { systemPrompt, userPrompt, useFallbackModel = false } = options;
+
+    const isTest = process.env.NODE_ENV === 'test' || config.env === 'test';
+    const isMock = isTest || !this.genAI || options.mock;
+
+    if (isMock) {
+      logger.info('[GeminiClient] Serving mock cover letter.');
+      return this._generateMockCoverLetter(options.jobTitle, options.companyName, options.tone, options.hiringManager);
+    }
+
+    try {
+      const activeModel = useFallbackModel ? this.fallbackModelName : this.modelName;
+      logger.info(`[GeminiClient] Calling Gemini API for cover letter using model: ${activeModel}...`);
+
+      const model = this.genAI.getGenerativeModel({
+        model: activeModel,
+        generationConfig: {
+          temperature: 0.5,
+        },
+        systemInstruction: systemPrompt,
+      });
+
+      const startTime = Date.now();
+      const result = await model.generateContent(userPrompt);
+      const response = await result.response;
+      const text = response.text();
+      const duration = Date.now() - startTime;
+
+      logger.info(`[GeminiClient] Gemini API cover letter responded in ${duration}ms.`);
+      return text;
+    } catch (err) {
+      logger.error(`[GeminiClient] Gemini API cover letter failed: ${err.message}`);
+      throw err;
+    }
+  }
+
+  _generateMockRewrite(original, mode = 'Professional') {
+    return `[Rewritten - Mode: ${mode}]\nOptimized and polished copy of the original text. Highlights metrics, action verbs, and improves clarity: ${original}`;
+  }
+
+  _generateMockCoverLetter(jobTitle = 'Software Engineer', company = 'Flipkart', tone = 'Professional', hiringManager = '') {
+    const salutation = hiringManager ? `Dear ${hiringManager},` : 'Dear Hiring Team,';
+    return `${salutation}\n\nI am writing to express my strong interest in the ${jobTitle} position at ${company}. With my background in software development and technical expertise, I am confident in my ability to contribute value to your engineering team.\n\nThank you for your time and consideration.\n\nSincerely,\nCandidate (Tone: ${tone})`;
+  }
 }
 
 module.exports = new GeminiClient();

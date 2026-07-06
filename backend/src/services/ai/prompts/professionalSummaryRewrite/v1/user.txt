@@ -1,0 +1,11 @@
+Please rewrite the following professional summary.
+
+Rewrite Mode: {{rewriteMode}}
+Requested Improvements: {{improvements}}
+
+Original Summary:
+<<<CONTENT_START>>>
+{{originalContent}}
+<<<CONTENT_END>>>
+
+Rewritten summary:

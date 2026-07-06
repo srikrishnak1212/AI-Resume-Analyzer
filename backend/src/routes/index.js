@@ -45,7 +45,10 @@ router.use('/job-match', jobMatchRouter);
 router.use('/job-description', jobDescriptionRouter);
 
 // ─── Phase 7: Enhancement Features ────────────────────────────────────────────
-// const coverLettersRouter = require('./coverLetters');
+const rewriteRouter = require('./rewrite');
+const coverLetterRouter = require('./coverLetter');
+router.use('/resume-rewrite', rewriteRouter);
+router.use('/cover-letter', coverLetterRouter);
 // const interviewRouter = require('./interview');
 // const careerRoadmapRouter = require('./careerRoadmap');
 // router.use('/cover-letters', coverLettersRouter);

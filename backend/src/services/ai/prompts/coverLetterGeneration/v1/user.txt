@@ -1,0 +1,19 @@
+Generate a cover letter based on the following details:
+
+Position: {{jobTitle}}
+Company: {{companyName}}
+Hiring Manager: {{hiringManager}}
+Requested Tone: {{tone}}
+Requested Length: {{length}}
+
+Candidate Resume Text:
+<<<RESUME_START>>>
+{{resumeText}}
+<<<RESUME_END>>>
+
+Job Description Text:
+<<<JD_START>>>
+{{jobDescriptionText}}
+<<<JD_END>>>
+
+Cover letter text:

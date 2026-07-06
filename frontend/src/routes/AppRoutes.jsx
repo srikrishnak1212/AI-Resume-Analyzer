@@ -32,6 +32,10 @@ const AnalyticsPage = lazy(() => import('../pages/Analytics/AnalyticsPage'));
 const ReportsPage = lazy(() => import('../pages/Reports/ReportsPage'));
 const ReportViewerPage = lazy(() => import('../pages/Reports/ReportViewerPage'));
 const JobMatchingPage = lazy(() => import('../pages/JobMatching/JobMatchingPage'));
+const ResumeRewritePage = lazy(() => import('../pages/ResumeRewrite/ResumeRewritePage'));
+const RewriteComparisonPage = lazy(() => import('../pages/ResumeRewrite/RewriteComparisonPage'));
+const CoverLetterPage = lazy(() => import('../pages/CoverLetter/CoverLetterPage'));
+const CoverLetterHistoryPage = lazy(() => import('../pages/CoverLetter/CoverLetterHistoryPage'));
 
 // ── Loading fallback ─────────────────────────────────────────────────────────────
 const PageLoader = () => (
@@ -118,6 +122,38 @@ const AppRoutes = () => (
         element={
           <PrivateRoute>
             <JobMatchingPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path={ROUTES.RESUME_REWRITE}
+        element={
+          <PrivateRoute>
+            <ResumeRewritePage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path={ROUTES.REWRITE_COMPARISON}
+        element={
+          <PrivateRoute>
+            <RewriteComparisonPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path={ROUTES.COVER_LETTER}
+        element={
+          <PrivateRoute>
+            <CoverLetterPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path={ROUTES.COVER_LETTER_HISTORY}
+        element={
+          <PrivateRoute>
+            <CoverLetterHistoryPage />
           </PrivateRoute>
         }
       />

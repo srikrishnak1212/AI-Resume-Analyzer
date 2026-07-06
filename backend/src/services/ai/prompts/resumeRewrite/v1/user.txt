@@ -1,0 +1,11 @@
+Please rewrite the following content.
+
+Rewrite Mode: {{rewriteMode}}
+Requested Improvements: {{improvements}}
+
+Original Content:
+<<<CONTENT_START>>>
+{{originalContent}}
+<<<CONTENT_END>>>
+
+Rewritten content:

@@ -269,6 +269,28 @@ class ResponseValidator {
       throw new AppError('AI JD extraction response does not match schema.', 422, 'AI_SCHEMA_VALIDATION_FAILED', details);
     }
   }
+
+  validateRewrite(rawText) {
+    if (!rawText || typeof rawText !== 'string' || rawText.trim().length < 10) {
+      throw new AppError('AI rewrite response is empty or too short.', 502, 'AI_EMPTY_RESPONSE');
+    }
+    let cleanText = rawText.trim();
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/^```(?:markdown|text|json)?\n?/i, '').replace(/\n?```$/i, '').trim();
+    }
+    return cleanText;
+  }
+
+  validateCoverLetter(rawText) {
+    if (!rawText || typeof rawText !== 'string' || rawText.trim().length < 50) {
+      throw new AppError('AI cover letter response is empty or too short.', 502, 'AI_EMPTY_RESPONSE');
+    }
+    let cleanText = rawText.trim();
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/^```(?:markdown|text|json)?\n?/i, '').replace(/\n?```$/i, '').trim();
+    }
+    return cleanText;
+  }
 }
 
 module.exports = new ResponseValidator();

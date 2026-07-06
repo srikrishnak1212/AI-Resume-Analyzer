@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, History, Sparkles, Target, FileSignature, HelpCircle, X, FileText } from 'lucide-react';
+import { LayoutDashboard, History, Sparkles, Target, FileSignature, HelpCircle, X, FileText, Edit3 } from 'lucide-react';
 import Button from './Button';
 import { ROUTES } from '../../utils/constants';
 
@@ -36,18 +36,21 @@ const Sidebar = ({ isOpen, onClose }) => {
       icon: Target,
       path: ROUTES.JOB_MATCH,
     },
+    {
+      label: 'Resume Rewrite',
+      icon: Edit3,
+      path: ROUTES.RESUME_REWRITE,
+    },
+    {
+      label: 'Cover Letter',
+      icon: FileSignature,
+      path: ROUTES.COVER_LETTER,
+    },
   ];
 
   // These features are not yet implemented (Phase 4+), but shown for visual completeness in the UI.
   // We can render them with a "Coming Soon" styling or lock badge.
-  const futureNavItems = [
-    {
-      label: 'Cover Letter',
-      icon: FileSignature,
-      path: '/cover-letter-locked',
-      disabled: true,
-    },
-  ];
+  const futureNavItems = [];
 
   const activeClass =
     'flex items-center gap-3 rounded-lg bg-primary-light px-3.5 py-2.5 text-body-sm font-semibold text-primary dark:bg-primary-light/10 border-l-[3px] border-primary transition-all duration-150';
