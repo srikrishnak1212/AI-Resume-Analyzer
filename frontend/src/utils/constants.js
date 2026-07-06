@@ -39,6 +39,7 @@ export const ROUTES = {
   DASHBOARD: '/dashboard',
   HISTORY: '/history',
   ANALYSIS: '/analysis/:resumeId',
+  ANALYTICS: '/analytics',
   JOB_MATCH: '/job-match',
   COVER_LETTER: '/cover-letter',
   INTERVIEW_PREP: '/interview-prep',

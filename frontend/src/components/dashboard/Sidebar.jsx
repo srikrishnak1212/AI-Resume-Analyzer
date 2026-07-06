@@ -22,14 +22,14 @@ const Sidebar = ({ isOpen, onClose }) => {
       icon: History,
       path: ROUTES.HISTORY,
     },
+    {
+      label: 'AI Analytics',
+      icon: Sparkles,
+      path: ROUTES.ANALYTICS,
+    },
   ];
 
   const comingSoonItems = [
-    {
-      label: 'AI Analysis',
-      icon: Sparkles,
-      path: '/analysis-locked',
-    },
     {
       label: 'Job Match',
       icon: Target,

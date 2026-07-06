@@ -21,17 +21,16 @@ const Sidebar = ({ isOpen, onClose }) => {
       icon: History,
       path: ROUTES.HISTORY,
     },
+    {
+      label: 'AI Analytics',
+      icon: Sparkles,
+      path: ROUTES.ANALYTICS,
+    },
   ];
 
   // These features are not yet implemented (Phase 4+), but shown for visual completeness in the UI.
   // We can render them with a "Coming Soon" styling or lock badge.
   const futureNavItems = [
-    {
-      label: 'AI Analysis',
-      icon: Sparkles,
-      path: '/analysis-locked',
-      disabled: true,
-    },
     {
       label: 'Job Match',
       icon: Target,
